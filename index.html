@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Internet</title>
     <style>
-        /* Diseño responsivo */
+        /* Reset de estilos */
         * {
             margin: 0;
             padding: 0;
@@ -17,17 +17,19 @@
             color: white;
             font-family: Arial, sans-serif;
             text-align: center;
-            overflow: hidden;
             height: 100vh;
             width: 100vw;
             display: flex;
             flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            overflow: hidden;
         }
 
         /* Contenedor del contador */
         #countdown-container {
             width: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.8);
             padding: 10px;
             text-align: center;
             z-index: 10;
@@ -48,17 +50,16 @@
             justify-content: center;
             align-items: center;
             background-color: black;
-            position: relative;
         }
 
         /* Imagen ajustada sin cortes */
         .slide {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Muestra la imagen completa sin recortar */
+            object-fit: contain; /* Asegura que la imagen se vea COMPLETA */
         }
 
-        /* Ajustes para pantallas más pequeñas */
+        /* Ajustes para pantallas pequeñas */
         @media (max-width: 768px) {
             #countdown {
                 font-size: 4vw;
