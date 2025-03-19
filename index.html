@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internet</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            color: white;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        #container {
+            max-width: 90%;
+            text-align: center;
+        }
+        .slideshow-container {
+            position: relative;
+            max-width: 100%;
+            max-height: 80vh;
+        }
+        .slide {
+            display: block;
+            width: 100%;
+            max-height: 80vh;
+        }
+        #countdown {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        let countdown = 10;
+        let slideIndex = 0;
+        let images = [
+            "https://www.coca-cola.com/content/dam/onexp/mx/es/terminos-y-condiciones/famsa03.png",
+            "https://www.krispykreme.mx/wp-content/uploads/2024/11/jueves-docena-84.webp"
+        ];
+
+        function updateCountdown() {
+            document.getElementById('countdown').textContent = `ESPERA UN MOMENTO LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
+            if (countdown === 0) {
+                window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
+                setTimeout(() => { window.close(); }, 2000);
+            } else {
+                countdown--;
+                setTimeout(updateCountdown, 1000);
+            }
+        }
+
+        function showSlides() {
+            let slideshow = document.getElementById("slideshow");
+            slideshow.src = images[slideIndex];
+            slideIndex = (slideIndex + 1) % images.length;
+            setTimeout(showSlides, 5000); // Cambia cada 5 segundos
+        }
+
+        window.onload = function() {
+            updateCountdown();
+            showSlides();
+        };
+    </script>
+</head>
+<body>
+    <div id="container">
+        <div id="countdown">LESPERA UN MOMENTO LIBERANDO INTERNET EN 10 SEGUNDOS ...</div>
+        <p></p>
+        <div class="slideshow-container">
+            <img id="slideshow" class="slide" src="" alt="Publicidad">
+        </div>
+        
+    </div>
+</body>
+</html>
