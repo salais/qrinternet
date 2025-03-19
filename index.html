@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -23,8 +22,6 @@
             width: 100vw;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
         }
 
         /* Contenedor del contador */
@@ -44,20 +41,21 @@
 
         /* Contenedor de la imagen */
         .slideshow-container {
-            flex-grow: 1;
+            flex-grow: 1; /* Ocupa todo el espacio restante */
             width: 100%;
             height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
             background-color: black;
+            position: relative;
         }
 
-        /* Imagen responsiva */
+        /* Imagen ajustada sin bordes negros */
         .slide {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* Asegura que la imagen se vea completa sin recortes */
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover; /* La imagen se ajusta cubriendo toda la pantalla */
         }
 
         /* Ajustes para pantallas más pequeñas */
@@ -77,8 +75,7 @@
         let countdown = 10;
         let slideIndex = 0;
         let images = [
-            "https://salais.github.io/qrinternet/images/image1.webp",
-            "https://salais.github.io/qrinternet/images/image2.webp"
+            "https://salais.github.io/qrinternet/images/image1.webp"
         ];
 
         function updateCountdown() {
