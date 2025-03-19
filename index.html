@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Internet</title>
     <style>
-        /* Reset de estilos */
+        /* Diseño responsivo */
         * {
             margin: 0;
             padding: 0;
@@ -17,19 +18,19 @@
             color: white;
             font-family: Arial, sans-serif;
             text-align: center;
+            overflow: hidden;
             height: 100vh;
             width: 100vw;
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
             align-items: center;
-            overflow: hidden;
         }
 
         /* Contenedor del contador */
         #countdown-container {
             width: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             padding: 10px;
             text-align: center;
             z-index: 10;
@@ -43,7 +44,7 @@
 
         /* Contenedor de la imagen */
         .slideshow-container {
-            flex-grow: 1; /* Ocupa todo el espacio restante */
+            flex-grow: 1;
             width: 100%;
             height: 100%;
             display: flex;
@@ -52,14 +53,14 @@
             background-color: black;
         }
 
-        /* Imagen ajustada sin cortes */
+        /* Imagen responsiva */
         .slide {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Asegura que la imagen se vea COMPLETA */
+            object-fit: contain; /* Asegura que la imagen se vea completa sin recortes */
         }
 
-        /* Ajustes para pantallas pequeñas */
+        /* Ajustes para pantallas más pequeñas */
         @media (max-width: 768px) {
             #countdown {
                 font-size: 4vw;
@@ -76,7 +77,8 @@
         let countdown = 10;
         let slideIndex = 0;
         let images = [
-            "https://salais.github.io/qrinternet/images/image1.webp"
+            "https://salais.github.io/qrinternet/images/image1.webp",
+            "https://salais.github.io/qrinternet/images/image2.webp"
         ];
 
         function updateCountdown() {
