@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Internet</title>
     <style>
-        /* Diseño responsivo */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             background-color: #000;
             color: white;
@@ -26,8 +23,6 @@
             justify-content: flex-start;
             align-items: center;
         }
-
-        /* Contenedor del contador */
         #countdown-container {
             width: 100%;
             background: rgba(0, 0, 0, 0.9);
@@ -35,14 +30,11 @@
             text-align: center;
             z-index: 10;
         }
-
         #countdown {
             font-size: 3vw;
             font-weight: bold;
             color: white;
         }
-
-        /* Contenedor de la imagen */
         .slideshow-container {
             flex-grow: 1;
             width: 100%;
@@ -51,22 +43,35 @@
             justify-content: center;
             align-items: center;
             background-color: black;
+            position: relative;
         }
-
-        /* Imagen responsiva */
         .slide {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Asegura que la imagen se vea completa sin recortes */
+            object-fit: contain;
         }
-
-        /* Ajustes para pantallas más pequeñas */
+        #whatsapp-button {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        #whatsapp-button:hover {
+            background-color: #1ebe57;
+            transform: scale(1.1);
+        }
         @media (max-width: 768px) {
             #countdown {
                 font-size: 4vw;
             }
         }
-
         @media (max-width: 480px) {
             #countdown {
                 font-size: 5vw;
@@ -77,15 +82,22 @@
         let countdown = 10;
         let slideIndex = 0;
         let images = [
-            "https://salais.github.io/qrinternet/images/image1.webp",
-            "https://salais.github.io/qrinternet/images/image2.webp"
+            { url: "https://salais.github.io/qrinternet/images/image1.webp", phone: "3326554569", description: "Oferta especial en refrescos!" },
+            { url: "https://salais.github.io/qrinternet/images/image2.webp", phone: "4272284124", description: "Descuento en caja de donas clasica!" }
         ];
+        let selectedPhone = "";
+        let selectedMessage = "";
 
         function updateCountdown() {
             document.getElementById('countdown').textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
             if (countdown === 0) {
                 window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
-                setTimeout(() => { window.close(); }, 2000);
+                setTimeout(() => { 
+                    if (selectedPhone) {
+                        let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
+                        window.location.href = `https://wa.me/${selectedPhone}?text=${whatsappMessage}`;
+                    }
+                }, 2000);
             } else {
                 countdown--;
                 setTimeout(updateCountdown, 1000);
@@ -94,9 +106,27 @@
 
         function showSlides() {
             let slideshow = document.getElementById("slideshow");
-            slideshow.src = images[slideIndex];
-            slideIndex = (slideIndex + 1) % images.length;
-            setTimeout(showSlides, 5000); // Cambia cada 5 segundos
+            let whatsappButton = document.getElementById("whatsapp-button");
+            slideshow.src = images[slideIndex].url;
+            whatsappButton.style.opacity = "0";
+            setTimeout(() => {
+                whatsappButton.style.opacity = "1";
+                whatsappButton.style.transform = "scale(1.1)";
+                setTimeout(() => {
+                    whatsappButton.style.transform = "scale(1)";
+                }, 300);
+            }, 500);
+            
+            whatsappButton.onclick = function() {
+                selectedPhone = images[slideIndex].phone;
+                selectedMessage = images[slideIndex].description;
+                console.log(`Seleccionado: ${selectedPhone} - ${selectedMessage}`);
+            };
+            whatsappButton.style.display = "block";
+            setTimeout(() => {
+                slideIndex = (slideIndex + 1) % images.length;
+                showSlides();
+            }, 5000);
         }
 
         window.onload = function() {
@@ -106,14 +136,12 @@
     </script>
 </head>
 <body>
-    <!-- Contador fijo en la parte superior -->
     <div id="countdown-container">
         <div id="countdown">ESPERA UN MOMENTO, LIBERANDO INTERNET EN 10 SEGUNDOS...</div>
     </div>
-
-    <!-- Contenedor de la imagen -->
     <div class="slideshow-container">
         <img id="slideshow" class="slide" src="" alt="Publicidad">
     </div>
+    <button id="whatsapp-button">¡Quiero esta oferta!</button>
 </body>
 </html>
