@@ -67,71 +67,137 @@
             background-color: #1ebe57;
             transform: scale(1.1);
         }
-        @media (max-width: 768px) {
-            #countdown {
-                font-size: 4vw;
-            }
-        }
-        @media (max-width: 480px) {
-            #countdown {
-                font-size: 5vw;
-            }
-        }
     </style>
+    
+    <!-- Firebase en modo compatibilidad -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
     <script>
-        let countdown = 10;
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo",
+            authDomain: "itos-f1e25.firebaseapp.com",
+            projectId: "itos-f1e25",
+            storageBucket: "itos-f1e25.appspot.com",
+            messagingSenderId: "910377107049",
+            appId: "1:910377107049:web:f6007fa49e5487da986cf8",
+            measurementId: "G-JCC8TR2VDT"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let countdown = 15;
         let slideIndex = 0;
-        let images = [
-            { url: "https://salais.github.io/qrinternet/images/image1.webp", phone: "3326554569", description: "Descuento especial en refrescos! *ID:20032025*" },
-            { url: "https://salais.github.io/qrinternet/images/image2.webp", phone: "4272284124", description: "Descuento en caja de donas clasica! *ID:20032025*" }
-        ];
+        let images = [];
         let selectedPhone = "";
         let selectedMessage = "";
 
-        function updateCountdown() {
-            document.getElementById('countdown').textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
-            if (countdown === 0) {
-                window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
-                setTimeout(() => { 
-                    if (selectedPhone) {
-                        let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
-                        window.location.href = `https://wa.me/${selectedPhone}?text=${whatsappMessage}`;
-                    }
-                }, 2000);
-            } else {
-                countdown--;
-                setTimeout(updateCountdown, 1000);
+        // Cargar imágenes desde Firebase Firestore
+        async function loadAds() {
+            try {
+                const adsRef = db.collection("ads");
+                const snapshot = await adsRef.get();
+                images = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                console.log("Imágenes cargadas:", images);  // Depuración
+
+                if (images.length > 0) {
+                    showSlides();
+                } else {
+                    console.error("No hay imágenes en la base de datos.");
+                }
+            } catch (error) {
+                console.error("Error al cargar las imágenes:", error);
             }
         }
 
-        function showSlides() {
-            let slideshow = document.getElementById("slideshow");
-            let whatsappButton = document.getElementById("whatsapp-button");
-            slideshow.src = images[slideIndex].url;
-            whatsappButton.style.opacity = "0";
-            setTimeout(() => {
-                whatsappButton.style.opacity = "1";
-                whatsappButton.style.transform = "scale(1.1)";
-                setTimeout(() => {
-                    whatsappButton.style.transform = "scale(1)";
-                }, 300);
-            }, 500);
-            
-            whatsappButton.onclick = function() {
-                selectedPhone = images[slideIndex].phone;
-                selectedMessage = images[slideIndex].description;
-                console.log(`Seleccionado: ${selectedPhone} - ${selectedMessage}`);
-            };
-            whatsappButton.style.display = "block";
-            setTimeout(() => {
-                slideIndex = (slideIndex + 1) % images.length;
-                showSlides();
-            }, 5000);
+        // Contador regresivo antes de liberar Internet
+        function updateCountdown() {
+    let countdownElement = document.getElementById('countdown');
+    
+    if (countdown > 0) {
+        countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
+        countdown--;
+        setTimeout(updateCountdown, 1000);
+    } else {
+        console.log("Redirigiendo para liberar internet...");
+
+        // Redireccionar a la URL del portal cautivo
+        window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
+
+        // Esperar 3 segundos antes de intentar redirigir a WhatsApp (por si hay un retraso en la carga)
+        setTimeout(() => { 
+            if (selectedPhone) {
+                let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
+                window.location.href = `https://wa.me/${selectedPhone}?text=${whatsappMessage}`;
+            }
+        }, 3000);
+    }
+}
+
+
+        // Registrar una vista en Firestore
+        function recordView(imageId) {
+            db.collection("ads").doc(imageId).update({
+                views: firebase.firestore.FieldValue.increment(1)
+            }).catch(error => console.error("Error al registrar la vista:", error));
         }
 
+        // Registrar un clic en Firestore
+        function recordClick(imageId) {
+            db.collection("ads").doc(imageId).update({
+                clicks: firebase.firestore.FieldValue.increment(1)
+            }).catch(error => console.error("Error al registrar el clic:", error));
+        }
+
+        // Mostrar imágenes en carrusel
+        function showSlides() {
+    if (countdown <= 0) {
+        console.log("Publicidad detenida porque el contador llegó a 0.");
+        return; // Detiene la función y evita que siga mostrando imágenes
+    }
+
+    if (images.length === 0) {
+        console.error("No hay imágenes disponibles.");
+        return;
+    }
+
+    let slideshow = document.getElementById("slideshow");
+    let whatsappButton = document.getElementById("whatsapp-button");
+
+    let currentImage = images[slideIndex];
+    console.log("Mostrando imagen:", currentImage);
+
+    slideshow.src = currentImage.url;  // Establecer la imagen
+    recordView(currentImage.id);
+
+    // Configurar el botón de WhatsApp
+    whatsappButton.style.display = "block";
+    whatsappButton.onclick = function() {
+        selectedPhone = currentImage.phone;
+        selectedMessage = currentImage.description;
+        recordClick(currentImage.id);
+    };
+
+    // Cambiar de imagen cada 5 segundos si el contador no ha llegado a 0
+    setTimeout(() => {
+        if (countdown > 0) {  // Solo continúa si el contador es mayor a 0
+            slideIndex = (slideIndex + 1) % images.length;
+            showSlides();
+        } else {
+            console.log("Rotación de publicidad detenida.");
+        }
+    }, 5000);
+}
+
+
+        // Ejecutar funciones al cargar la página
         window.onload = function() {
             updateCountdown();
-            showSlides();
+            loadAds();
         };
     </script>
 </head>
