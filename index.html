@@ -108,14 +108,15 @@
             if (images.length === 0) return;
             let slideshow = document.getElementById("slideshow");
             let clickButton = document.getElementById("click-button");
-            slideshow.src = images[slideIndex].url;
+            let currentImage = images[slideIndex];
+            slideshow.src = currentImage.url;
             clickButton.style.display = "block";
             clickButton.onclick = function() {
-                recordClick(images[slideIndex].id);
+                recordClick(currentImage.id);
             };
-            recordView(images[slideIndex].id);
+            recordView(currentImage.id);
             slideIndex = (slideIndex + 1) % images.length;
-            setTimeout(showSlides, 5000);
+            setTimeout(() => showSlides(), 5000);
         }
 
         async function recordClick(imageId) {
