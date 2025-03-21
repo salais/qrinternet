@@ -3,24 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirigiendo a WhatsApp...</title>
-    <script>
-        window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const phone = urlParams.get("phone");
-            const message = urlParams.get("message");
+    <title>Internet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+        }
+        #countdown-container {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px;
+            text-align: center;
+            z-index: 10;
+        }
+        #countdown {
+            font-size: 3vw;
+            font-weight: bold;
+            color: white;
+        }
+        .slideshow-container {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+            position: relative;
+        }
+        .slide {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        #whatsapp-button {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        #whatsapp-button:hover {
+            background-color: #1ebe57;
+            transform: scale(1.1);
+        }
+    </style>
+    
+    <!-- Firebase en modo compatibilidad -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-            if (phone) {
-                let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${message}. ¿Me puedes dar más detalles?`);
-                let whatsappURL = `https://wa.me/${phone}?text=${whatsappMessage}`;
-                window.location.href = whatsappURL;
-            } else {
-                document.body.innerHTML = "<h1>Error: No hay número de WhatsApp disponible.</h1>";
+    <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo",
+            authDomain: "itos-f1e25.firebaseapp.com",
+            projectId: "itos-f1e25",
+            storageBucket: "itos-f1e25.appspot.com",
+            messagingSenderId: "910377107049",
+            appId: "1:910377107049:web:f6007fa49e5487da986cf8",
+            measurementId: "G-JCC8TR2VDT"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let countdown = 15;
+        let slideIndex = 0;
+        let images = [];
+        let selectedPhone = "";
+        let selectedMessage = "";
+
+        // Cargar imágenes desde Firebase Firestore
+        async function loadAds() {
+            try {
+                const adsRef = db.collection("ads");
+                const snapshot = await adsRef.get();
+                images = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                console.log("Imágenes cargadas:", images);  // Depuración
+
+                if (images.length > 0) {
+                    showSlides();
+                } else {
+                    console.error("No hay imágenes en la base de datos.");
+                }
+            } catch (error) {
+                console.error("Error al cargar las imágenes:", error);
             }
+        }
+
+        // Contador regresivo antes de liberar Internet
+        function updateCountdown() {
+    let countdownElement = document.getElementById('countdown');
+    
+    if (countdown > 0) {
+        countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
+        countdown--;
+        setTimeout(updateCountdown, 1000);
+    } else {
+        console.log("Redirigiendo para liberar internet...");
+
+        // Redireccionar a la URL del portal cautivo
+        window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
+
+        // Esperar 3 segundos antes de intentar redirigir a WhatsApp (por si hay un retraso en la carga)
+        setTimeout(() => { 
+            if (selectedPhone) {
+                let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
+                window.location.href = `https://wa.me/${selectedPhone}?text=${whatsappMessage}`;
+            }
+        }, 3000);
+    }
+}
+
+
+        // Registrar una vista en Firestore
+        function recordView(imageId) {
+            db.collection("ads").doc(imageId).update({
+                views: firebase.firestore.FieldValue.increment(1)
+            }).catch(error => console.error("Error al registrar la vista:", error));
+        }
+
+        // Registrar un clic en Firestore
+        function recordClick(imageId) {
+            db.collection("ads").doc(imageId).update({
+                clicks: firebase.firestore.FieldValue.increment(1)
+            }).catch(error => console.error("Error al registrar el clic:", error));
+        }
+
+        // Mostrar imágenes en carrusel
+        function showSlides() {
+    if (countdown <= 0) {
+        console.log("Publicidad detenida porque el contador llegó a 0.");
+        return; // Detiene la función y evita que siga mostrando imágenes
+    }
+
+    if (images.length === 0) {
+        console.error("No hay imágenes disponibles.");
+        return;
+    }
+
+    let slideshow = document.getElementById("slideshow");
+    let whatsappButton = document.getElementById("whatsapp-button");
+
+    let currentImage = images[slideIndex];
+    console.log("Mostrando imagen:", currentImage);
+
+    slideshow.src = currentImage.url;  // Establecer la imagen
+    recordView(currentImage.id);
+
+    // Configurar el botón de WhatsApp
+    whatsappButton.style.display = "block";
+    whatsappButton.onclick = function() {
+        selectedPhone = currentImage.phone;
+        selectedMessage = currentImage.description;
+        recordClick(currentImage.id);
+    };
+
+    // Cambiar de imagen cada 5 segundos si el contador no ha llegado a 0
+    setTimeout(() => {
+        if (countdown > 0) {  // Solo continúa si el contador es mayor a 0
+            slideIndex = (slideIndex + 1) % images.length;
+            showSlides();
+        } else {
+            console.log("Rotación de publicidad detenida.");
+        }
+    }, 5000);
+}
+
+
+        // Ejecutar funciones al cargar la página
+        window.onload = function() {
+            updateCountdown();
+            loadAds();
         };
     </script>
 </head>
 <body>
-    <h1>Redirigiendo a WhatsApp...</h1>
+    <div id="countdown-container">
+        <div id="countdown">ESPERA UN MOMENTO, LIBERANDO INTERNET EN 10 SEGUNDOS...</div>
+    </div>
+    <div class="slideshow-container">
+        <img id="slideshow" class="slide" src="" alt="Publicidad">
+    </div>
+    <button id="whatsapp-button">¡Quiero esta oferta!</button>
 </body>
 </html>
