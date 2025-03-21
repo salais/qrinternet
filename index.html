@@ -41,54 +41,28 @@
         <img id="adImage" src="" alt="Publicidad" style="display:none;">
     </div>
 
-    <!-- Firebase v8 (compatible sin módulos) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    
     <script>
-        // Configuración Firebase
-        var firebaseConfig = {
-            apiKey: "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo",
-            authDomain: "itos-f1e25.firebaseapp.com",
-            projectId: "itos-f1e25",
-            storageBucket: "itos-f1e25.appspot.com",
-            messagingSenderId: "910377107049",
-            appId: "1:910377107049:web:f6007fa49e5487da986cf8",
-            measurementId: "G-JCC8TR2VDT"
-        };
+        // Lista de imágenes
+        let adsList = [
+            "https://salais.github.io/qrinternet/images/image1.webp",
+            "https://salais.github.io/qrinternet/images/image2.webp",
+            "https://salais.github.io/qrinternet/images/image3.jpg"
+        ];
 
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        var db = firebase.firestore();
-
-        let adsList = [];
         let currentIndex = 0;
-
-        function loadAds() {
-            db.collection("ads").get().then(snapshot => {
-                adsList = [];
-                snapshot.forEach(doc => {
-                    adsList.push(doc.data().url);
-                });
-                if (adsList.length > 0) {
-                    document.getElementById('adImage').style.display = "block";
-                    changeImage();
-                    setInterval(changeImage, 5000); // Cambia cada 5 segundos
-                }
-            }).catch(error => {
-                console.error("Error cargando imágenes:", error);
-            });
-        }
+        let imgElement = document.getElementById("adImage");
 
         function changeImage() {
-            if (adsList.length > 0) {
-                document.getElementById('adImage').src = adsList[currentIndex];
-                currentIndex = (currentIndex + 1) % adsList.length;
-            }
+            imgElement.src = adsList[currentIndex];
+            imgElement.style.display = "block"; // Mostrar la imagen
+            currentIndex = (currentIndex + 1) % adsList.length;
         }
 
-        // Cargar imágenes al abrir la página
-        loadAds();
+        // Cambia la imagen cada 5 segundos
+        setInterval(changeImage, 5000);
+
+        // Cargar la primera imagen
+        changeImage();
     </script>
 
 </body>
