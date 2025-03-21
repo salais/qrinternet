@@ -39,6 +39,42 @@
             margin-top: 10px;
             color: #ff0000;
         }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #formOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        #formContainer {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -48,6 +84,19 @@
         <p>Disfruta de tu conexión</p>
         <img id="adImage" alt="Publicidad">
         <p>Tiempo restante: <span id="countdown">15</span> segundos</p>
+        <button id="infoButton">Solicitar más información</button>
+    </div>
+
+    <!-- Formulario emergente -->
+    <div id="formOverlay">
+        <div id="formContainer">
+            <h3>Solicitar información</h3>
+            <p>Completa tus datos y nos pondremos en contacto.</p>
+            <input type="email" id="email" placeholder="Correo electrónico" required>
+            <input type="tel" id="phone" placeholder="Número de teléfono" required>
+            <button onclick="submitForm()">Enviar</button>
+            <button onclick="closeForm()">Cancelar</button>
+        </div>
     </div>
 
     <script>
@@ -58,9 +107,11 @@
         let currentIndex = 0;
         let imgElement = document.getElementById("adImage");
         let countdownElement = document.getElementById("countdown");
+        let infoButton = document.getElementById("infoButton");
         let countdownValue = 15;
         let countdownInterval;
-        let adsFinished = false; // Variable para evitar duplicidad de views
+        let adsFinished = false;
+        let currentAdId = null;
         const REDIRECT_URL = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
 
         // 🔹 Clave API de Firebase (reemplázala con la tuya)
@@ -72,52 +123,39 @@
         async function retryLoadAds(attempts = 3) {
             if (attempts <= 0) {
                 console.error("❌ No se pudieron cargar imágenes después de varios intentos.");
-                reloadIfNeeded();
                 return;
             }
 
             try {
                 const response = await fetch(FIRESTORE_URL);
                 const data = await response.json();
-                console.log("📜 Respuesta Firestore:", data); 
 
                 if (!data.documents) {
-                    console.warn(`🚨 No se encontraron documentos en Firestore. Intentos restantes: ${attempts - 1}`);
-                    setTimeout(() => retryLoadAds(attempts - 1), 2000);
+                    console.warn(`🚨 No se encontraron documentos en Firestore.`);
                     return;
                 }
 
-                adsList = data.documents
-                    .map(doc => doc.fields?.url?.stringValue)
-                    .filter(url => url);
-                
-                adsIds = data.documents
-                    .map(doc => doc.name.split("/").pop()) 
-                    .filter(id => id);
+                adsList = data.documents.map(doc => doc.fields?.url?.stringValue).filter(url => url);
+                adsIds = data.documents.map(doc => doc.name.split("/").pop()).filter(id => id);
 
                 if (adsList.length > 0) {
-                    console.log("✅ Imágenes cargadas:", adsList);
-                    imgElement.style.display = "block"; 
-                    startCountdown(); 
-                } else {
-                    console.warn(`⚠ No se encontraron imágenes. Intentos restantes: ${attempts - 1}`);
-                    setTimeout(() => retryLoadAds(attempts - 1), 2000);
+                    imgElement.style.display = "block";
+                    startCountdown();
                 }
             } catch (error) {
                 console.error("🔥 Error al cargar imágenes:", error);
-                setTimeout(() => retryLoadAds(attempts - 1), 2000);
             }
         }
 
         function startCountdown() {
-            countdownValue = 15; 
+            countdownValue = 15;
             countdownElement.textContent = countdownValue;
-            imgElement.src = adsList[currentIndex]; 
-            updateViews(adsIds[currentIndex]);
+            currentAdId = adsIds[currentIndex];
+            imgElement.src = adsList[currentIndex];
 
             countdownInterval = setInterval(() => {
-                if (adsFinished) return; // Evita actualizaciones si ya se terminó la publicidad
-                
+                if (adsFinished) return;
+
                 countdownValue--;
                 countdownElement.textContent = countdownValue;
 
@@ -127,72 +165,59 @@
 
                 if (countdownValue <= 0) {
                     clearInterval(countdownInterval);
-                    stopAdsAndRedirect(); 
+                    stopAdsAndRedirect();
                 }
             }, 1000);
         }
 
         function changeImage() {
-            if (adsFinished) return; // Evita cambios si la publicidad ya terminó
-            
+            if (adsFinished) return;
             currentIndex = (currentIndex + 1) % adsList.length;
+            currentAdId = adsIds[currentIndex];
             imgElement.src = adsList[currentIndex];
-            console.log("🔄 Mostrando imagen:", adsList[currentIndex]);
-            updateViews(adsIds[currentIndex]);
-        }
-
-        async function updateViews(docId) {
-            if (!docId || adsFinished) return; // Evita actualizar si ya terminó la publicidad
-
-            const docUrl = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${docId}?key=${FIREBASE_API_KEY}`;
-
-            try {
-                const response = await fetch(docUrl);
-                const data = await response.json();
-
-                let currentViews = data.fields?.views?.integerValue || 0;
-                currentViews = parseInt(currentViews) + 1;
-
-                const updateUrl = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${docId}?updateMask.fieldPaths=views&key=${FIREBASE_API_KEY}`;
-
-                const body = {
-                    fields: {
-                        views: { integerValue: currentViews }
-                    }
-                };
-
-                const updateResponse = await fetch(updateUrl, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body)
-                });
-
-                if (!updateResponse.ok) {
-                    throw new Error(`HTTP error! Status: ${updateResponse.status}`);
-                }
-
-                console.log(`📊 Views actualizado a ${currentViews} para ${docId}`);
-            } catch (error) {
-                console.error(`❌ Error al actualizar views para ${docId}:`, error);
-            }
         }
 
         function stopAdsAndRedirect() {
-            adsFinished = true; // Detiene la actualización de imágenes y views
-            console.log("✅ Publicidad finalizada. Redirigiendo a:", REDIRECT_URL);
-            imgElement.style.display = "none"; // Oculta la imagen
+            adsFinished = true;
+            imgElement.style.display = "none";
             countdownElement.textContent = "Conexión desbloqueada";
-            
+
             setTimeout(() => {
                 window.location.href = REDIRECT_URL;
             }, 2000);
         }
 
-        function reloadIfNeeded() {
-            console.warn("⚠ Recargando página por fallo en carga de imágenes...");
-            setTimeout(() => {
-                location.reload();
-            }, 3000);
+        infoButton.addEventListener("click", openForm);
+
+        function openForm() {
+            document.getElementById("formOverlay").style.display = "flex";
+        }
+
+        function closeForm() {
+            document.getElementById("formOverlay").style.display = "none";
+        }
+
+        async function submitForm() {
+            const email = document.getElementById("email").value;
+            const phone = document.getElementById("phone").value;
+
+            const requestBody = {
+                fields: {
+                    email: { stringValue: email },
+                    phone: { stringValue: phone },
+                    adId: { stringValue: currentAdId },
+                    timestamp: { timestampValue: new Date().toISOString() }
+                }
+            };
+
+            await fetch(`https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/leads?key=${FIREBASE_API_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody)
+            });
+
+            console.log("📩 Datos guardados en Firestore:", requestBody);
+            closeForm();
         }
 
         retryLoadAds();
