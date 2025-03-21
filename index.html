@@ -3,159 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Internet</title>
+    <title>Portal Cautivo</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
         body {
-            background-color: #000;
-            color: white;
             font-family: Arial, sans-serif;
             text-align: center;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
+            margin: 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
-        }
-        #countdown-container {
-            width: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 10px;
-            text-align: center;
-            z-index: 10;
-        }
-        #countdown {
-            font-size: 3vw;
-            font-weight: bold;
-            color: white;
-        }
-        .slideshow-container {
-            flex-grow: 1;
-            width: 100%;
-            height: 100%;
-            display: flex;
             justify-content: center;
             align-items: center;
-            background-color: black;
-            position: relative;
+            height: 100vh;
+            background-color: #f4f4f4;
         }
-        .slide {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+        .container {
+            width: 90%;
+            max-width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        #click-button {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            background-color: #25D366;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            cursor: pointer;
-            border-radius: 50px;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-        }
-        #click-button:hover {
-            background-color: #1ebe57;
-            transform: scale(1.1);
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 10px;
+            border-radius: 10px;
         }
     </style>
-    <script>
-        let countdown = 15; // Cambiado a 15 segundos
-        let slideIndex = 0;
-        let images = [];
-        let intervalTime = 5; // Tiempo en segundos por imagen
-        let intervalId;
-
-        async function loadAds() {
-            try {
-                const response = await fetch("https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads");
-                const data = await response.json();
-                images = data.documents.map(doc => {
-                    const fields = doc.fields || {};
-                    return {
-                        id: doc.name.split('/').pop(),
-                        url: fields.url ? fields.url.stringValue : ""
-                    };
-                });
-
-                if (images.length > 0) {
-                    showSlides();
-                    intervalId = setInterval(nextSlide, intervalTime * 1000); // Sincroniza con el conteo
-                    updateCountdown(); // Inicia el conteo sincronizado
-                }
-            } catch (error) {
-                console.error("Error al obtener las imágenes:", error);
-            }
-        }
-
-        function updateCountdown() {
-            let countdownElement = document.getElementById('countdown');
-
-            function tick() {
-                if (countdown > 0) {
-                    countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
-                    countdown -= intervalTime;
-                } else {
-                    clearInterval(intervalId);
-                    window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
-                }
-            }
-
-            tick(); // Llamar una vez inmediatamente
-            setInterval(tick, intervalTime * 1000); // Mantener la sincronización con el *slideshow*
-        }
-
-        function showSlides() {
-            if (images.length === 0) return;
-            let slideshow = document.getElementById("slideshow");
-            let clickButton = document.getElementById("click-button");
-
-            slideshow.src = images[slideIndex].url;
-            clickButton.style.display = "block";
-
-            clickButton.onclick = function() {
-                recordClick(images[slideIndex].id);
-            };
-        }
-
-        function nextSlide() {
-            slideIndex = (slideIndex + 1) % images.length;
-            showSlides();
-        }
-
-        async function recordClick(imageId) {
-            try {
-                await fetch(`https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${imageId}?updateMask.fieldPaths=clicks`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ fields: { clicks: { integerValue: 1 } } })
-                });
-            } catch (error) {
-                console.error("Error al registrar el clic:", error);
-            }
-        }
-
-        window.addEventListener("load", function() {
-            loadAds();
-        });
-    </script>
 </head>
 <body>
-    <div id="countdown-container">
-        <div id="countdown">ESPERA UN MOMENTO, LIBERANDO INTERNET EN 15 SEGUNDOS...</div>
+
+    <div class="container">
+        <h2>Bienvenido</h2>
+        <p>Disfruta de tu conexión</p>
+        <img id="adImage" src="" alt="Publicidad" style="display:none;">
     </div>
-    <div class="slideshow-container">
-        <img id="slideshow" class="slide" src="" alt="Publicidad">
-    </div>
-    <button id="click-button">¡Registrar Clic!</button>
+
+    <!-- Firebase v8 (compatible sin módulos) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <script>
+        // Configuración Firebase
+        var firebaseConfig = {
+            apiKey: "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo",
+            authDomain: "itos-f1e25.firebaseapp.com",
+            projectId: "itos-f1e25",
+            storageBucket: "itos-f1e25.appspot.com",
+            messagingSenderId: "910377107049",
+            appId: "1:910377107049:web:f6007fa49e5487da986cf8",
+            measurementId: "G-JCC8TR2VDT"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.firestore();
+
+        let adsList = [];
+        let currentIndex = 0;
+
+        function loadAds() {
+            db.collection("ads").get().then(snapshot => {
+                adsList = [];
+                snapshot.forEach(doc => {
+                    adsList.push(doc.data().url);
+                });
+                if (adsList.length > 0) {
+                    document.getElementById('adImage').style.display = "block";
+                    changeImage();
+                    setInterval(changeImage, 5000); // Cambia cada 5 segundos
+                }
+            }).catch(error => {
+                console.error("Error cargando imágenes:", error);
+            });
+        }
+
+        function changeImage() {
+            if (adsList.length > 0) {
+                document.getElementById('adImage').src = adsList[currentIndex];
+                currentIndex = (currentIndex + 1) % adsList.length;
+            }
+        }
+
+        // Cargar imágenes al abrir la página
+        loadAds();
+    </script>
+
 </body>
 </html>
