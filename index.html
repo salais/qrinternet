@@ -24,6 +24,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
         img {
             max-width: 100%;
@@ -31,6 +32,12 @@
             margin-top: 10px;
             border-radius: 10px;
             display: none; /* Ocultar imagen hasta que se cargue */
+        }
+        #countdown {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+            color: #ff0000;
         }
     </style>
 </head>
@@ -40,6 +47,7 @@
         <h2>Bienvenido</h2>
         <p>Disfruta de tu conexión</p>
         <img id="adImage" alt="Publicidad">
+        <p>Tiempo restante: <span id="countdown">15</span> segundos</p>
     </div>
 
     <script>
@@ -49,6 +57,9 @@
         let adsIds = []; // Lista de IDs de los documentos para actualizar views
         let currentIndex = 0;
         let imgElement = document.getElementById("adImage");
+        let countdownElement = document.getElementById("countdown");
+        let countdownValue = 15;
+        let countdownInterval;
 
         // 🔹 Clave API de Firebase (reemplázala con la tuya)
         const FIREBASE_API_KEY = "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo";
@@ -66,7 +77,7 @@
             try {
                 const response = await fetch(FIRESTORE_URL);
                 const data = await response.json();
-                console.log("📜 Respuesta Firestore:", data); // Verifica la estructura de Firestore
+                console.log("📜 Respuesta Firestore:", data); 
 
                 if (!data.documents) {
                     console.warn(`🚨 No se encontraron documentos en Firestore. Intentos restantes: ${attempts - 1}`);
@@ -74,23 +85,21 @@
                     return;
                 }
 
-                // Extrae URLs e IDs de los anuncios
                 adsList = data.documents
                     .map(doc => doc.fields?.url?.stringValue)
                     .filter(url => url);
                 
                 adsIds = data.documents
-                    .map(doc => doc.name.split("/").pop()) // Extrae el ID del documento
+                    .map(doc => doc.name.split("/").pop()) 
                     .filter(id => id);
 
                 if (adsList.length > 0) {
                     console.log("✅ Imágenes cargadas:", adsList);
-                    imgElement.style.display = "block"; // Muestra la imagen
-                    changeImage();
-                    setInterval(changeImage, 5000); // Cambia cada 5 segundos
+                    imgElement.style.display = "block"; 
+                    startCountdown(); 
                 } else {
                     console.warn(`⚠ No se encontraron imágenes. Intentos restantes: ${attempts - 1}`);
-                    setTimeout(() => retryLoadAds(attempts - 1), 2000); // Reintenta en 2 segundos
+                    setTimeout(() => retryLoadAds(attempts - 1), 2000);
                 }
             } catch (error) {
                 console.error("🔥 Error al cargar imágenes:", error);
@@ -98,16 +107,32 @@
             }
         }
 
+        function startCountdown() {
+            countdownValue = 15; 
+            countdownElement.textContent = countdownValue;
+            imgElement.src = adsList[currentIndex]; 
+            updateViews(adsIds[currentIndex]);
+
+            countdownInterval = setInterval(() => {
+                countdownValue--;
+                countdownElement.textContent = countdownValue;
+
+                if (countdownValue % 5 === 0 && countdownValue !== 15) {
+                    changeImage();
+                }
+
+                if (countdownValue <= 0) {
+                    clearInterval(countdownInterval);
+                    startCountdown(); 
+                }
+            }, 1000);
+        }
+
         function changeImage() {
-            if (adsList.length > 0) {
-                imgElement.src = adsList[currentIndex];
-                console.log("🔄 Mostrando imagen:", adsList[currentIndex]);
-
-                // Incrementa el contador de views en Firestore
-                updateViews(adsIds[currentIndex]);
-
-                currentIndex = (currentIndex + 1) % adsList.length;
-            }
+            currentIndex = (currentIndex + 1) % adsList.length;
+            imgElement.src = adsList[currentIndex];
+            console.log("🔄 Mostrando imagen:", adsList[currentIndex]);
+            updateViews(adsIds[currentIndex]);
         }
 
         async function updateViews(docId) {
@@ -116,14 +141,12 @@
             const docUrl = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${docId}?key=${FIREBASE_API_KEY}`;
 
             try {
-                // 1️⃣ Obtener el valor actual de views
                 const response = await fetch(docUrl);
                 const data = await response.json();
 
-                let currentViews = data.fields?.views?.integerValue || 0; // Si no existe, iniciar en 0
+                let currentViews = data.fields?.views?.integerValue || 0;
                 currentViews = parseInt(currentViews) + 1;
 
-                // 2️⃣ Enviar actualización a Firestore
                 const updateUrl = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${docId}?updateMask.fieldPaths=views&key=${FIREBASE_API_KEY}`;
 
                 const body = {
@@ -152,10 +175,9 @@
             console.warn("⚠ Recargando página por fallo en carga de imágenes...");
             setTimeout(() => {
                 location.reload();
-            }, 3000); // Recarga en 3 segundos si no hay imágenes
+            }, 3000);
         }
 
-        // 🔹 Cargar imágenes al abrir la página con reintentos
         retryLoadAds();
     </script>
 
