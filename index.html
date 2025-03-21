@@ -68,58 +68,18 @@
             transform: scale(1.1);
         }
     </style>
-    
-    <!-- Firebase en modo compatibilidad -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
     <script>
-        // Configuración de Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo",
-            authDomain: "itos-f1e25.firebaseapp.com",
-            projectId: "itos-f1e25",
-            storageBucket: "itos-f1e25.appspot.com",
-            messagingSenderId: "910377107049",
-            appId: "1:910377107049:web:f6007fa49e5487da986cf8",
-            measurementId: "G-JCC8TR2VDT"
-        };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
         let countdown = 15;
         let slideIndex = 0;
-        let images = [];
-        let selectedPhone = "";
-        let selectedMessage = "";
 
-        // Precargar imágenes antes de mostrarlas
-        async function loadAds() {
-    try {
-        console.time("Carga de imágenes desde Firebase");
-        const storageRef = firebase.storage().ref("ads"); // Carpeta "ads" en Storage
-        const files = await storageRef.listAll();
-        console.timeEnd("Carga de imágenes desde Firebase");
-
-        images = await Promise.all(files.items.map(async (fileRef) => {
-            const url = await fileRef.getDownloadURL();
-            return { url };
-        }));
-
-        console.log("Imágenes cargadas desde Storage:", images);
-
-        if (images.length > 0) {
-            showSlides();
-        } else {
-            console.error("No hay imágenes disponibles.");
-        }
-    } catch (error) {
-        console.error("Error al cargar las imágenes:", error);
-    }
-}
-
+        // Lista de imágenes de prueba (sin Firebase)
+        let images = [
+            { url: "https://salais.github.io/qrinternet/images/image1.webp/800x600?text=Publicidad+1" },
+            { url: "https://salais.github.io/qrinternet/images/image2.webp"" },
+            { url: "https://salais.github.io/qrinternet/images/image3.jpg"
+" }
+        ];
 
         // Contador regresivo antes de liberar Internet
         function updateCountdown() {
@@ -134,75 +94,32 @@
 
                 // Redireccionar a la URL del portal cautivo
                 window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
-
-                // Esperar 3 segundos antes de intentar redirigir a WhatsApp
-                setTimeout(() => { 
-                    if (selectedPhone) {
-                        let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
-                        window.location.href = `https://wa.me/${selectedPhone}?text=${whatsappMessage}`;
-                    }
-                }, 3000);
             }
-        }
-
-        // Registrar una vista en Firestore
-        function recordView(imageId) {
-            db.collection("ads").doc(imageId).update({
-                views: firebase.firestore.FieldValue.increment(1)
-            }).catch(error => console.error("Error al registrar la vista:", error));
-        }
-
-        // Registrar un clic en Firestore
-        function recordClick(imageId) {
-            db.collection("ads").doc(imageId).update({
-                clicks: firebase.firestore.FieldValue.increment(1)
-            }).catch(error => console.error("Error al registrar el clic:", error));
         }
 
         // Mostrar imágenes en carrusel
         function showSlides() {
             if (images.length === 0) {
-                console.error("No hay imágenes cargadas aún.");
-                return;
-            }
-
-            if (countdown <= 0) {
-                console.log("Publicidad detenida porque el contador llegó a 0.");
+                console.error("No hay imágenes disponibles.");
                 return;
             }
 
             let slideshow = document.getElementById("slideshow");
-            let whatsappButton = document.getElementById("whatsapp-button");
 
-            let currentImage = images[slideIndex];
-            console.log("Mostrando imagen:", currentImage.url);
+            let currentImage = images[slideIndex].url;
+            slideshow.src = currentImage + "?t=" + new Date().getTime(); // Evita problemas de caché
 
-            slideshow.src = currentImage.url;
-            recordView(currentImage.id);
+            console.log("Mostrando imagen:", currentImage);
 
-            // Configurar el botón de WhatsApp
-            whatsappButton.style.display = "block";
-            whatsappButton.onclick = function() {
-                selectedPhone = currentImage.phone;
-                selectedMessage = currentImage.description;
-                recordClick(currentImage.id);
-            };
+            slideIndex = (slideIndex + 1) % images.length;
 
-            // Cambiar de imagen cada 5 segundos si el contador no ha llegado a 0
-            setTimeout(() => {
-                if (countdown > 0) {
-                    slideIndex = (slideIndex + 1) % images.length;
-                    showSlides();
-                } else {
-                    console.log("Rotación de publicidad detenida.");
-                }
-            }, 5000);
+            setTimeout(showSlides, 5000);
         }
 
         // Ejecutar funciones al cargar la página
         window.onload = function() {
             updateCountdown();
-            loadAds();
+            showSlides();
         };
     </script>
 </head>
@@ -213,6 +130,5 @@
     <div class="slideshow-container">
         <img id="slideshow" class="slide" src="" alt="Publicidad">
     </div>
-    <button id="whatsapp-button">¡Quiero esta oferta!</button>
 </body>
 </html>
