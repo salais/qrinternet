@@ -31,7 +31,7 @@
             height: auto;
             margin-top: 10px;
             border-radius: 10px;
-            display: none; /* Ocultar imagen hasta que se cargue */
+            display: none;
         }
         #countdown {
             font-size: 20px;
@@ -44,21 +44,23 @@
 <body>
 
     <div class="container">
-        <p><h3>Espere estamos liberando el internet <span id="countdown">15</span> segundos..</h3></p>
-        <img id="adImage" alt="Internet">
-        
+        <h2>Bienvenido</h2>
+        <p>Disfruta de tu conexión</p>
+        <img id="adImage" alt="Publicidad">
+        <p>Tiempo restante: <span id="countdown">15</span> segundos</p>
     </div>
 
     <script>
         console.log("🚀 Cargando imágenes desde Firestore...");
 
         let adsList = [];
-        let adsIds = []; // Lista de IDs de los documentos para actualizar views
+        let adsIds = [];
         let currentIndex = 0;
         let imgElement = document.getElementById("adImage");
         let countdownElement = document.getElementById("countdown");
         let countdownValue = 15;
         let countdownInterval;
+        const REDIRECT_URL = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
 
         // 🔹 Clave API de Firebase (reemplázala con la tuya)
         const FIREBASE_API_KEY = "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo";
@@ -122,7 +124,7 @@
 
                 if (countdownValue <= 0) {
                     clearInterval(countdownInterval);
-                    startCountdown(); 
+                    stopAdsAndRedirect(); 
                 }
             }, 1000);
         }
@@ -168,6 +170,16 @@
             } catch (error) {
                 console.error(`❌ Error al actualizar views para ${docId}:`, error);
             }
+        }
+
+        function stopAdsAndRedirect() {
+            console.log("✅ Publicidad finalizada. Redirigiendo a:", REDIRECT_URL);
+            imgElement.style.display = "none"; // Oculta la imagen
+            countdownElement.textContent = "Conexión desbloqueada";
+            
+            setTimeout(() => {
+                window.location.href = REDIRECT_URL;
+            }, 2000);
         }
 
         function reloadIfNeeded() {
