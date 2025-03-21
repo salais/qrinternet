@@ -86,40 +86,33 @@
                 });
                 if (images.length > 0) {
                     showSlides();
-                    updateCountdown();
                 }
             } catch (error) {
                 console.error("Error al obtener las imágenes:", error);
             }
+            setTimeout(updateCountdown, 3000);
         }
 
         function updateCountdown() {
             let countdownElement = document.getElementById('countdown');
-            function countdownTick() {
-                if (countdown > 0) {
-                    countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
-                    countdown--;
-                    setTimeout(countdownTick, 5000);
-                } else {
-                    window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
-                }
+            if (countdown > 0) {
+                countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
+                countdown--;
+                setTimeout(updateCountdown, 1000);
+            } else {
+                window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
             }
-            countdownTick();
         }
 
         function showSlides() {
             if (images.length === 0) return;
             let slideshow = document.getElementById("slideshow");
             let clickButton = document.getElementById("click-button");
-            let currentImage = images[slideIndex];
-            slideshow.src = currentImage.url;
+            slideshow.src = images[slideIndex].url;
             clickButton.style.display = "block";
             clickButton.onclick = function() {
-                recordClick(currentImage.id);
+                recordClick(images[slideIndex].id);
             };
-            recordView(currentImage.id);
-            slideIndex = (slideIndex + 1) % images.length;
-            setTimeout(showSlides, 5000);
         }
 
         async function recordClick(imageId) {
@@ -131,18 +124,6 @@
                 });
             } catch (error) {
                 console.error("Error al registrar el clic:", error);
-            }
-        }
-
-        async function recordView(imageId) {
-            try {
-                await fetch(`https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${imageId}?updateMask.fieldPaths=views`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ fields: { views: { integerValue: 1 } } })
-                });
-            } catch (error) {
-                console.error("Error al registrar la vista:", error);
             }
         }
 
