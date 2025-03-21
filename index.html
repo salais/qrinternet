@@ -30,6 +30,7 @@
             height: auto;
             margin-top: 10px;
             border-radius: 10px;
+            display: none; /* Ocultar imagen hasta que se cargue */
         }
     </style>
 </head>
@@ -38,60 +39,59 @@
     <div class="container">
         <h2>Bienvenido</h2>
         <p>Disfruta de tu conexión</p>
-        <img id="adImage" src="" alt="Publicidad" style="display:none;">
+        <img id="adImage" alt="Publicidad">
     </div>
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    
     <script>
-        // Configuración Firebase
-        var firebaseConfig = {
-            apiKey: "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo",
-            authDomain: "itos-f1e25.firebaseapp.com",
-            projectId: "itos-f1e25",
-            storageBucket: "itos-f1e25.appspot.com",
-            messagingSenderId: "910377107049",
-            appId: "1:910377107049:web:f6007fa49e5487da986cf8",
-            measurementId: "G-JCC8TR2VDT"
-        };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        var db = firebase.firestore();
+        console.log(" Cargando imágenes desde Firestore...");
 
         let adsList = [];
         let currentIndex = 0;
         let imgElement = document.getElementById("adImage");
 
-        function loadAds() {
-            db.collection("ads").get().then(snapshot => {
-                adsList = [];
-                snapshot.forEach(doc => {
-                    let url = doc.data().url;
-                    console.log("Imagen cargada:", url); // Verifica en consola
-                    adsList.push(url);
-                });
+        // 🔹 Clave API de Firebase (debes reemplazarla con la tuya)
+        const FIREBASE_API_KEY = "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo";
+
+        // 🔹 URL de Firestore REST API
+        const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads?key=${FIREBASE_API_KEY}`;
+
+        async function loadAds() {
+            try {
+                const response = await fetch(FIRESTORE_URL);
+                const data = await response.json();
+                console.log("📜 Respuesta Firestore:", data); // Verifica la estructura de Firestore
+
+                if (!data.documents) {
+                    console.warn("🚨 No se encontraron documentos en Firestore.");
+                    return;
+                }
+
+                // Extrae solo las URLs de las imágenes y filtra valores nulos
+                adsList = data.documents
+                    .map(doc => doc.fields?.url?.stringValue)
+                    .filter(url => url);
 
                 if (adsList.length > 0) {
                     imgElement.style.display = "block"; // Muestra la imagen
                     changeImage();
                     setInterval(changeImage, 5000); // Cambia cada 5 segundos
+                } else {
+                    console.warn("🚨 No se encontraron imágenes válidas en Firestore.");
                 }
-            }).catch(error => {
-                console.error("Error cargando imágenes:", error);
-            });
+            } catch (error) {
+                console.error("🔥 Error al cargar imágenes:", error);
+            }
         }
 
         function changeImage() {
             if (adsList.length > 0) {
                 imgElement.src = adsList[currentIndex];
+                console.log(" Mostrando imagen:", adsList[currentIndex]);
                 currentIndex = (currentIndex + 1) % adsList.length;
             }
         }
 
-        // Cargar imágenes al abrir la página
+        // 🔹 Cargar imágenes al abrir la página
         loadAds();
     </script>
 
