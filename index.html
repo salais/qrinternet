@@ -96,23 +96,19 @@
         let selectedMessage = "";
 
         // Cargar imágenes desde Firebase Firestore
-        async function loadAds() {
-            try {
-                const adsRef = db.collection("ads");
-                const snapshot = await adsRef.get();
-                images = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        function loadAds() {
+    db.collection("ads").onSnapshot((snapshot) => {
+        images = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                console.log("Imágenes cargadas:", images);  // Depuración
-
-                if (images.length > 0) {
-                    showSlides();
-                } else {
-                    console.error("No hay imágenes en la base de datos.");
-                }
-            } catch (error) {
-                console.error("Error al cargar las imágenes:", error);
-            }
+        if (images.length > 0) {
+            showSlides();
+        } else {
+            console.error("No hay imágenes en la base de datos.");
         }
+    }, (error) => {
+        console.error("Error al cargar las imágenes:", error);
+    });
+}
 
         // Contador regresivo antes de liberar Internet
         function updateCountdown() {
