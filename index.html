@@ -1,133 +1,70 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Internet</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background-color: #000;
-            color: white;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
-        }
-        #countdown-container {
-            width: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 10px;
-            text-align: center;
-            z-index: 10;
-        }
-        #countdown {
-            font-size: 3vw;
-            font-weight: bold;
-            color: white;
-        }
-        .slideshow-container {
-            flex-grow: 1;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: black;
-            position: relative;
-        }
-        .slide {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        #whatsapp-button {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            background-color: #25D366;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            cursor: pointer;
-            border-radius: 50px;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-        }
-        #whatsapp-button:hover {
-            background-color: #1ebe57;
-            transform: scale(1.1);
-        }
-    </style>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
 
-    <script>
-        let countdown = 15;
-        let slideIndex = 0;
+<script>
+    // Configuración de Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo",
+        authDomain: "itos-f1e25.firebaseapp.com",
+        projectId: "itos-f1e25",
+        storageBucket: "itos-f1e25.appspot.com",
+        messagingSenderId: "910377107049",
+        appId: "1:910377107049:web:f6007fa49e5487da986cf8",
+        measurementId: "G-JCC8TR2VDT"
+    };
 
-        // Lista de imágenes de prueba (sin Firebase)
-        let images = [
-            { url: "https://salais.github.io/qrinternet/images/image1.webp" },
-            { url: "https://salais.github.io/qrinternet/images/image2.webp" },
-            { url: "https://salais.github.io/qrinternet/images/image3.jpg" }
-        ];
+    firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
 
-        // Contador regresivo antes de liberar Internet
-        function updateCountdown() {
-            let countdownElement = document.getElementById('countdown');
+    let countdown = 15;
+    let slideIndex = 0;
+    let images = [];
 
-            if (countdown > 0) {
-                countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
-                countdown--;
-                setTimeout(updateCountdown, 1000);
+    // Cargar imágenes desde Firebase Storage
+    async function loadAds() {
+        try {
+            console.time("Carga de imágenes desde Storage");
+            const storageRef = storage.ref("ads"); // Carpeta "ads" en Storage
+            const files = await storageRef.listAll();
+            console.timeEnd("Carga de imágenes desde Storage");
+
+            images = await Promise.all(files.items.map(async (fileRef) => {
+                const url = await fileRef.getDownloadURL();
+                return { url };
+            }));
+
+            console.log("Imágenes cargadas desde Storage:", images);
+
+            if (images.length > 0) {
+                showSlides();
             } else {
-                console.log("Redirigiendo para liberar internet...");
-
-                // Redireccionar a la URL del portal cautivo
-                window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
-            }
-        }
-
-        // Mostrar imágenes en carrusel
-        function showSlides() {
-            if (images.length === 0) {
                 console.error("No hay imágenes disponibles.");
-                return;
             }
+        } catch (error) {
+            console.error("Error al cargar las imágenes:", error);
+        }
+    }
 
-            let slideshow = document.getElementById("slideshow");
-
-            let currentImage = images[slideIndex].url;
-            slideshow.src = currentImage + "?t=" + new Date().getTime(); // Evita problemas de caché
-
-            console.log("Mostrando imagen:", currentImage);
-
-            slideIndex = (slideIndex + 1) % images.length;
-
-            setTimeout(showSlides, 5000);
+    function showSlides() {
+        if (images.length === 0) {
+            console.error("No hay imágenes disponibles.");
+            return;
         }
 
-        // Ejecutar funciones al cargar la página
-        window.onload = function() {
-            updateCountdown();
-            showSlides();
-        };
-    </script>
-</head>
-<body>
-    <div id="countdown-container">
-        <div id="countdown">ESPERA UN MOMENTO, LIBERANDO INTERNET EN 10 SEGUNDOS...</div>
-    </div>
-    <div class="slideshow-container">
-        <img id="slideshow" class="slide" src="" alt="Publicidad">
-    </div>
-</body>
-</html>
+        let slideshow = document.getElementById("slideshow");
+
+        let currentImage = images[slideIndex].url;
+        slideshow.src = currentImage + "?t=" + new Date().getTime();
+
+        console.log("Mostrando imagen:", currentImage);
+
+        slideIndex = (slideIndex + 1) % images.length;
+
+        setTimeout(showSlides, 5000);
+    }
+
+    window.onload = function() {
+        updateCountdown();
+        loadAds();
+    };
+</script>
