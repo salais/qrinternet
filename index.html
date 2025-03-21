@@ -57,6 +57,20 @@
         let slideIndex = 0;
         let images = [];
 
+        // Contador regresivo antes de liberar Internet
+        function updateCountdown() {
+            let countdownElement = document.getElementById('countdown');
+
+            if (countdown > 0) {
+                countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
+                countdown--;
+                setTimeout(updateCountdown, 1000);
+            } else {
+                console.log("Redirigiendo para liberar internet...");
+                window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
+            }
+        }
+
         // Cargar imágenes desde Firestore usando fetch()
         async function loadAds() {
             try {
@@ -81,20 +95,6 @@
             }
         }
 
-        // Contador regresivo antes de liberar Internet
-        function updateCountdown() {
-            let countdownElement = document.getElementById('countdown');
-
-            if (countdown > 0) {
-                countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
-                countdown--;
-                setTimeout(updateCountdown, 1000);
-            } else {
-                console.log("Redirigiendo para liberar internet...");
-                window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
-            }
-        }
-
         // Mostrar imágenes en carrusel
         function showSlides() {
             if (images.length === 0) {
@@ -116,8 +116,8 @@
 
         // Ejecutar funciones al cargar la página
         window.onload = function() {
-            updateCountdown();
-            loadAds();
+            updateCountdown();  // Llamar al contador de tiempo
+            loadAds();          // Cargar imágenes
         };
     </script>
 </head>
