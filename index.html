@@ -94,8 +94,8 @@
             <p>Completa tus datos y nos pondremos en contacto.</p>
             <input type="email" id="email" placeholder="Correo electrónico" required>
             <input type="tel" id="phone" placeholder="Número de teléfono" required>
-            <button onclick="submitForm()">Enviar</button>
-            <button onclick="closeForm()">Cancelar</button>
+            <button id="submitButton">Enviar</button>
+            <button id="cancelButton">Cancelar</button>
         </div>
     </div>
 
@@ -108,17 +108,15 @@
         let imgElement = document.getElementById("adImage");
         let countdownElement = document.getElementById("countdown");
         let infoButton = document.getElementById("infoButton");
+        let submitButton = document.getElementById("submitButton");
+        let cancelButton = document.getElementById("cancelButton");
         let countdownValue = 15;
         let countdownInterval;
         let adsFinished = false;
-        let formOpen = false;
+        let countdownPaused = false;
         let currentAdId = null;
         const REDIRECT_URL = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
-
-        // 🔹 Clave API de Firebase (reemplázala con la tuya)
         const FIREBASE_API_KEY = "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo";
-
-        // 🔹 URL de Firestore REST API
         const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads?key=${FIREBASE_API_KEY}`;
 
         async function retryLoadAds() {
@@ -136,6 +134,9 @@
 
                 if (adsList.length > 0) {
                     imgElement.style.display = "block";
+                    currentAdId = adsIds[currentIndex];
+                    imgElement.src = adsList[currentIndex];
+                    registerView(currentAdId);
                     startCountdown();
                 }
             } catch (error) {
@@ -144,13 +145,10 @@
         }
 
         function startCountdown() {
-            countdownValue = 15;
             countdownElement.textContent = countdownValue;
-            currentAdId = adsIds[currentIndex];
-            imgElement.src = adsList[currentIndex];
 
             countdownInterval = setInterval(() => {
-                if (adsFinished || formOpen) return; // Pausa si el formulario está abierto
+                if (adsFinished || countdownPaused) return;
 
                 countdownValue--;
                 countdownElement.textContent = countdownValue;
@@ -167,11 +165,54 @@
         }
 
         function changeImage() {
-            if (adsFinished || formOpen) return; // Evita cambiar imágenes si el formulario está abierto
+            if (adsFinished || countdownPaused) return;
             currentIndex = (currentIndex + 1) % adsList.length;
             currentAdId = adsIds[currentIndex];
             imgElement.src = adsList[currentIndex];
+            registerView(currentAdId);
         }
+
+        async function registerView(adId) {
+    const adDocURL = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${adId}?key=${FIREBASE_API_KEY}`;
+
+    try {
+        // 🔹 Obtener el documento actual para leer todos sus campos
+        let response = await fetch(adDocURL);
+        let data = await response.json();
+
+        if (!data.fields) {
+            console.error("⚠️ El anuncio no tiene datos. Asegúrate de que existe en Firestore.");
+            return;
+        }
+
+        // 🔹 Mantener todos los campos actuales
+        let existingFields = data.fields;
+
+        // 🔹 Incrementar el campo 'views' sin borrar otros datos
+        let currentViews = existingFields.views ? parseInt(existingFields.views.integerValue) : 0;
+        let updatedViews = currentViews + 1;
+
+        // 🔹 Mantener todos los campos existentes y actualizar solo 'views'
+        let requestBody = {
+            fields: {
+                ...existingFields, // 🔹 Mantener todos los campos previos
+                views: { integerValue: updatedViews } // 🔹 Solo actualizar 'views'
+            }
+        };
+
+        // 🔹 Enviar actualización sin borrar otros campos
+        await fetch(adDocURL, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody)
+        });
+
+        console.log(`📊 Vista registrada. Total: ${updatedViews}`);
+    } catch (error) {
+        console.error("🔥 Error al registrar la vista:", error);
+    }
+}
+
 
         function stopAdsAndRedirect() {
             adsFinished = true;
@@ -184,17 +225,17 @@
         }
 
         infoButton.addEventListener("click", openForm);
+        submitButton.addEventListener("click", submitForm);
+        cancelButton.addEventListener("click", closeForm);
 
         function openForm() {
-            formOpen = true; // Pausar el contador
-            clearInterval(countdownInterval);
+            countdownPaused = true;
             document.getElementById("formOverlay").style.display = "flex";
         }
 
         function closeForm() {
-            formOpen = false; // Reanudar el contador
+            countdownPaused = false;
             document.getElementById("formOverlay").style.display = "none";
-            startCountdown(); // Reiniciar el contador cuando se cierre
         }
 
         async function submitForm() {
