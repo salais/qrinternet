@@ -69,9 +69,11 @@
         }
     </style>
     <script>
-        let countdown = 18;
+        let countdown = 15; // Cambiado a 15 segundos
         let slideIndex = 0;
         let images = [];
+        let intervalTime = 5; // Tiempo en segundos por imagen
+        let intervalId;
 
         async function loadAds() {
             try {
@@ -87,23 +89,29 @@
 
                 if (images.length > 0) {
                     showSlides();
-                    setInterval(nextSlide, 8000); // Cambia la imagen cada 5 segundos
+                    intervalId = setInterval(nextSlide, intervalTime * 1000); // Sincroniza con el conteo
+                    updateCountdown(); // Inicia el conteo sincronizado
                 }
             } catch (error) {
                 console.error("Error al obtener las imágenes:", error);
             }
-            setTimeout(updateCountdown, 3000);
         }
 
         function updateCountdown() {
             let countdownElement = document.getElementById('countdown');
-            if (countdown > 0) {
-                countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
-                countdown--;
-                setTimeout(updateCountdown, 1000);
-            } else {
-                window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
+
+            function tick() {
+                if (countdown > 0) {
+                    countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
+                    countdown -= intervalTime;
+                } else {
+                    clearInterval(intervalId);
+                    window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
+                }
             }
+
+            tick(); // Llamar una vez inmediatamente
+            setInterval(tick, intervalTime * 1000); // Mantener la sincronización con el *slideshow*
         }
 
         function showSlides() {
