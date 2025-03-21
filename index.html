@@ -97,37 +97,29 @@
 
         // Precargar imágenes antes de mostrarlas
         async function loadAds() {
-            try {
-                console.time("Carga de imágenes desde Firebase");
-                const adsRef = db.collection("ads");
-                const snapshot = await adsRef.get();
-                console.timeEnd("Carga de imágenes desde Firebase");
+    try {
+        console.time("Carga de imágenes desde Firebase");
+        const storageRef = firebase.storage().ref("ads"); // Carpeta "ads" en Storage
+        const files = await storageRef.listAll();
+        console.timeEnd("Carga de imágenes desde Firebase");
 
-                images = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        images = await Promise.all(files.items.map(async (fileRef) => {
+            const url = await fileRef.getDownloadURL();
+            return { url };
+        }));
 
-                console.log("Imágenes cargadas:", images);
+        console.log("Imágenes cargadas desde Storage:", images);
 
-                if (images.length === 0) {
-                    console.error("No hay imágenes en la base de datos.");
-                    return;
-                }
-
-                // Precargar imágenes antes de mostrarlas
-                let loadPromises = images.map(img => new Promise((resolve, reject) => {
-                    let image = new Image();
-                    image.src = img.url;
-                    image.onload = resolve;
-                    image.onerror = reject;
-                }));
-
-                await Promise.all(loadPromises);
-                console.log("Imágenes precargadas correctamente.");
-
-                showSlides();
-            } catch (error) {
-                console.error("Error al cargar las imágenes:", error);
-            }
+        if (images.length > 0) {
+            showSlides();
+        } else {
+            console.error("No hay imágenes disponibles.");
         }
+    } catch (error) {
+        console.error("Error al cargar las imágenes:", error);
+    }
+}
+
 
         // Contador regresivo antes de liberar Internet
         function updateCountdown() {
