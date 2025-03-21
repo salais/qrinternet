@@ -85,15 +85,7 @@
                 setTimeout(updateCountdown, 1000);
             } else {
                 console.log("Redirigiendo para liberar internet...");
-                window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
-
-                // Esperar 3 segundos antes de abrir WhatsApp en una nueva pestaña
-                setTimeout(() => { 
-                    if (selectedPhone) {
-                        let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
-                        window.open(`https://wa.me/${selectedPhone}?text=${whatsappMessage}`, '_blank'); 
-                    }
-                }, 3000);
+                window.location.href = "http://192.168.2.254:3990/trial?userurl=https://wa.me/" + selectedPhone + "?text=" + encodeURIComponent(selectedMessage);
             }
         }
 
@@ -191,8 +183,7 @@
                     selectedPhone = currentImage.phone;
                     selectedMessage = currentImage.description;
                     recordClick(currentImage.id);
-                    let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
-                    window.open(`https://wa.me/${selectedPhone}?text=${whatsappMessage}`, '_blank');
+                    countdown = 5; // Reducir tiempo de espera para WhatsApp
                 };
             } else {
                 whatsappButton.style.display = "none";
