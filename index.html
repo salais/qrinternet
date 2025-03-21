@@ -111,6 +111,7 @@
         let countdownValue = 15;
         let countdownInterval;
         let adsFinished = false;
+        let formOpen = false;
         let currentAdId = null;
         const REDIRECT_URL = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
 
@@ -120,18 +121,13 @@
         // 🔹 URL de Firestore REST API
         const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads?key=${FIREBASE_API_KEY}`;
 
-        async function retryLoadAds(attempts = 3) {
-            if (attempts <= 0) {
-                console.error("❌ No se pudieron cargar imágenes después de varios intentos.");
-                return;
-            }
-
+        async function retryLoadAds() {
             try {
                 const response = await fetch(FIRESTORE_URL);
                 const data = await response.json();
 
                 if (!data.documents) {
-                    console.warn(`🚨 No se encontraron documentos en Firestore.`);
+                    console.warn("🚨 No se encontraron documentos en Firestore.");
                     return;
                 }
 
@@ -154,7 +150,7 @@
             imgElement.src = adsList[currentIndex];
 
             countdownInterval = setInterval(() => {
-                if (adsFinished) return;
+                if (adsFinished || formOpen) return; // Pausa si el formulario está abierto
 
                 countdownValue--;
                 countdownElement.textContent = countdownValue;
@@ -171,7 +167,7 @@
         }
 
         function changeImage() {
-            if (adsFinished) return;
+            if (adsFinished || formOpen) return; // Evita cambiar imágenes si el formulario está abierto
             currentIndex = (currentIndex + 1) % adsList.length;
             currentAdId = adsIds[currentIndex];
             imgElement.src = adsList[currentIndex];
@@ -190,11 +186,15 @@
         infoButton.addEventListener("click", openForm);
 
         function openForm() {
+            formOpen = true; // Pausar el contador
+            clearInterval(countdownInterval);
             document.getElementById("formOverlay").style.display = "flex";
         }
 
         function closeForm() {
+            formOpen = false; // Reanudar el contador
             document.getElementById("formOverlay").style.display = "none";
+            startCountdown(); // Reiniciar el contador cuando se cierre
         }
 
         async function submitForm() {
