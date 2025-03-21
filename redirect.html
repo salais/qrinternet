@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirigiendo a WhatsApp...</title>
+    <script>
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const phone = urlParams.get("phone");
+            const message = urlParams.get("message");
+
+            if (phone) {
+                let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${message}. ¿Me puedes dar más detalles?`);
+                let whatsappURL = `https://wa.me/${phone}?text=${whatsappMessage}`;
+                window.location.href = whatsappURL;
+            } else {
+                document.body.innerHTML = "<h1>Error: No hay número de WhatsApp disponible.</h1>";
+            }
+        };
+    </script>
+</head>
+<body>
+    <h1>Redirigiendo a WhatsApp...</h1>
+</body>
+</html>
