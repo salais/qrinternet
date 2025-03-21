@@ -113,26 +113,36 @@
         async function updateViews(docId) {
             if (!docId) return;
 
-            const updateUrl = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${docId}?updateMask.fieldPaths=views&key=${FIREBASE_API_KEY}`;
-
-            const body = {
-                fields: {
-                    views: { integerValue: { increment: 1 } }
-                }
-            };
+            const docUrl = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${docId}?key=${FIREBASE_API_KEY}`;
 
             try {
-                const response = await fetch(updateUrl, {
+                // 1️⃣ Obtener el valor actual de views
+                const response = await fetch(docUrl);
+                const data = await response.json();
+
+                let currentViews = data.fields?.views?.integerValue || 0; // Si no existe, iniciar en 0
+                currentViews = parseInt(currentViews) + 1;
+
+                // 2️⃣ Enviar actualización a Firestore
+                const updateUrl = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${docId}?updateMask.fieldPaths=views&key=${FIREBASE_API_KEY}`;
+
+                const body = {
+                    fields: {
+                        views: { integerValue: currentViews }
+                    }
+                };
+
+                const updateResponse = await fetch(updateUrl, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body)
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
+                if (!updateResponse.ok) {
+                    throw new Error(`HTTP error! Status: ${updateResponse.status}`);
                 }
 
-                console.log(`📊 Views incrementado para ${docId}`);
+                console.log(`📊 Views actualizado a ${currentViews} para ${docId}`);
             } catch (error) {
                 console.error(`❌ Error al actualizar views para ${docId}:`, error);
             }
