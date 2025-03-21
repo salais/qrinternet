@@ -130,35 +130,36 @@ async function loadAds() {
     }
 }
 
-        // Registrar una vista en Firestore
-        async function recordView(imageId) {
-            try {
-                await fetch(`https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${imageId}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        fields: { views: { integerValue: 1 } }
-                    })
-                });
-            } catch (error) {
-                console.error("Error al registrar la vista:", error);
-            }
-        }
+       // Registrar una vista en Firestore sin borrar los demás campos
+async function recordView(imageId) {
+    try {
+        await fetch(`https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${imageId}?updateMask.fieldPaths=views`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                fields: { views: { integerValue: 1 } }  // Incrementar después de obtener el valor actual
+            })
+        });
+    } catch (error) {
+        console.error("Error al registrar la vista:", error);
+    }
+}
 
-        // Registrar un clic en Firestore
-        async function recordClick(imageId) {
-            try {
-                await fetch(`https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${imageId}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        fields: { clicks: { integerValue: 1 } }
-                    })
-                });
-            } catch (error) {
-                console.error("Error al registrar el clic:", error);
-            }
-        }
+// Registrar un clic en Firestore sin borrar los demás campos
+async function recordClick(imageId) {
+    try {
+        await fetch(`https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${imageId}?updateMask.fieldPaths=clicks`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                fields: { clicks: { integerValue: 1 } }  // Incrementar después de obtener el valor actual
+            })
+        });
+    } catch (error) {
+        console.error("Error al registrar el clic:", error);
+    }
+}
+
 
         // Mostrar imágenes en carrusel
         function showSlides() {
