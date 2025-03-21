@@ -60,6 +60,7 @@
         let countdownElement = document.getElementById("countdown");
         let countdownValue = 15;
         let countdownInterval;
+        let adsFinished = false; // Variable para evitar duplicidad de views
         const REDIRECT_URL = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
 
         // 🔹 Clave API de Firebase (reemplázala con la tuya)
@@ -115,10 +116,12 @@
             updateViews(adsIds[currentIndex]);
 
             countdownInterval = setInterval(() => {
+                if (adsFinished) return; // Evita actualizaciones si ya se terminó la publicidad
+                
                 countdownValue--;
                 countdownElement.textContent = countdownValue;
 
-                if (countdownValue % 5 === 0 && countdownValue !== 15) {
+                if (countdownValue % 5 === 0 && countdownValue !== 15 && countdownValue !== 0) {
                     changeImage();
                 }
 
@@ -130,6 +133,8 @@
         }
 
         function changeImage() {
+            if (adsFinished) return; // Evita cambios si la publicidad ya terminó
+            
             currentIndex = (currentIndex + 1) % adsList.length;
             imgElement.src = adsList[currentIndex];
             console.log("🔄 Mostrando imagen:", adsList[currentIndex]);
@@ -137,7 +142,7 @@
         }
 
         async function updateViews(docId) {
-            if (!docId) return;
+            if (!docId || adsFinished) return; // Evita actualizar si ya terminó la publicidad
 
             const docUrl = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${docId}?key=${FIREBASE_API_KEY}`;
 
@@ -173,6 +178,7 @@
         }
 
         function stopAdsAndRedirect() {
+            adsFinished = true; // Detiene la actualización de imágenes y views
             console.log("✅ Publicidad finalizada. Redirigiendo a:", REDIRECT_URL);
             imgElement.style.display = "none"; // Oculta la imagen
             countdownElement.textContent = "Conexión desbloqueada";
