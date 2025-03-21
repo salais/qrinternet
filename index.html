@@ -95,50 +95,63 @@
         let selectedPhone = "";
         let selectedMessage = "";
 
-        // Cargar imágenes desde Firebase Firestore
-       async function loadAds() {
-    try {
-        const adsRef = db.collection("ads");
-        const snapshot = await adsRef.get();
-        images = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Precargar imágenes antes de mostrarlas
+        async function loadAds() {
+            try {
+                console.time("Carga de imágenes desde Firebase");
+                const adsRef = db.collection("ads");
+                const snapshot = await adsRef.get();
+                console.timeEnd("Carga de imágenes desde Firebase");
 
-        console.log("Imágenes cargadas:", images);  // Depuración
+                images = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        if (images.length > 0) {
-            showSlides();  // Llamar solo si hay imágenes
-        } else {
-            console.error("No hay imágenes en la base de datos.");
+                console.log("Imágenes cargadas:", images);
+
+                if (images.length === 0) {
+                    console.error("No hay imágenes en la base de datos.");
+                    return;
+                }
+
+                // Precargar imágenes antes de mostrarlas
+                let loadPromises = images.map(img => new Promise((resolve, reject) => {
+                    let image = new Image();
+                    image.src = img.url;
+                    image.onload = resolve;
+                    image.onerror = reject;
+                }));
+
+                await Promise.all(loadPromises);
+                console.log("Imágenes precargadas correctamente.");
+
+                showSlides();
+            } catch (error) {
+                console.error("Error al cargar las imágenes:", error);
+            }
         }
-    } catch (error) {
-        console.error("Error al cargar las imágenes:", error);
-    }
-}
-
 
         // Contador regresivo antes de liberar Internet
         function updateCountdown() {
-    let countdownElement = document.getElementById('countdown');
-    
-    if (countdown > 0) {
-        countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
-        countdown--;
-        setTimeout(updateCountdown, 1000);
-    } else {
-        console.log("Redirigiendo para liberar internet...");
+            let countdownElement = document.getElementById('countdown');
 
-        // Redireccionar a la URL del portal cautivo
-        window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
+            if (countdown > 0) {
+                countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
+                countdown--;
+                setTimeout(updateCountdown, 1000);
+            } else {
+                console.log("Redirigiendo para liberar internet...");
 
-        // Esperar 3 segundos antes de intentar redirigir a WhatsApp (por si hay un retraso en la carga)
-        setTimeout(() => { 
-            if (selectedPhone) {
-                let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
-                window.location.href = `https://wa.me/${selectedPhone}?text=${whatsappMessage}`;
+                // Redireccionar a la URL del portal cautivo
+                window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
+
+                // Esperar 3 segundos antes de intentar redirigir a WhatsApp
+                setTimeout(() => { 
+                    if (selectedPhone) {
+                        let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
+                        window.location.href = `https://wa.me/${selectedPhone}?text=${whatsappMessage}`;
+                    }
+                }, 3000);
             }
-        }, 3000);
-    }
-}
-
+        }
 
         // Registrar una vista en Firestore
         function recordView(imageId) {
@@ -156,44 +169,43 @@
 
         // Mostrar imágenes en carrusel
         function showSlides() {
-    if (countdown <= 0) {
-        console.log("Publicidad detenida porque el contador llegó a 0.");
-        return; // Detiene la función y evita que siga mostrando imágenes
-    }
+            if (images.length === 0) {
+                console.error("No hay imágenes cargadas aún.");
+                return;
+            }
 
-    if (images.length === 0) {
-        console.error("No hay imágenes disponibles.");
-        return;
-    }
+            if (countdown <= 0) {
+                console.log("Publicidad detenida porque el contador llegó a 0.");
+                return;
+            }
 
-    let slideshow = document.getElementById("slideshow");
-    let whatsappButton = document.getElementById("whatsapp-button");
+            let slideshow = document.getElementById("slideshow");
+            let whatsappButton = document.getElementById("whatsapp-button");
 
-    let currentImage = images[slideIndex];
-    console.log("Mostrando imagen:", currentImage);
+            let currentImage = images[slideIndex];
+            console.log("Mostrando imagen:", currentImage.url);
 
-    slideshow.src = currentImage.url;  // Establecer la imagen
-    recordView(currentImage.id);
+            slideshow.src = currentImage.url;
+            recordView(currentImage.id);
 
-    // Configurar el botón de WhatsApp
-    whatsappButton.style.display = "block";
-    whatsappButton.onclick = function() {
-        selectedPhone = currentImage.phone;
-        selectedMessage = currentImage.description;
-        recordClick(currentImage.id);
-    };
+            // Configurar el botón de WhatsApp
+            whatsappButton.style.display = "block";
+            whatsappButton.onclick = function() {
+                selectedPhone = currentImage.phone;
+                selectedMessage = currentImage.description;
+                recordClick(currentImage.id);
+            };
 
-    // Cambiar de imagen cada 5 segundos si el contador no ha llegado a 0
-    setTimeout(() => {
-        if (countdown > 0) {  // Solo continúa si el contador es mayor a 0
-            slideIndex = (slideIndex + 1) % images.length;
-            showSlides();
-        } else {
-            console.log("Rotación de publicidad detenida.");
+            // Cambiar de imagen cada 5 segundos si el contador no ha llegado a 0
+            setTimeout(() => {
+                if (countdown > 0) {
+                    slideIndex = (slideIndex + 1) % images.length;
+                    showSlides();
+                } else {
+                    console.log("Rotación de publicidad detenida.");
+                }
+            }, 5000);
         }
-    }, 5000);
-}
-
 
         // Ejecutar funciones al cargar la página
         window.onload = function() {
