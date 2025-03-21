@@ -81,10 +81,9 @@
 
     <div class="container">
         <h2>Bienvenido</h2>
-        <p>Disfruta de tu conexión</p>
+        <h4>Liberando internet en <span id="countdown">15</span> segundos..</h4>
+        <button id="infoButton">Obtener Promoción!!</button>
         <img id="adImage" alt="Publicidad">
-        <p>Tiempo restante: <span id="countdown">15</span> segundos</p>
-        <button id="infoButton">Solicitar más información</button>
     </div>
 
     <!-- Formulario emergente -->
@@ -100,7 +99,7 @@
     </div>
 
     <script>
-        console.log("🚀 Cargando imágenes desde Firestore...");
+       
 
         let adsList = [];
         let adsIds = [];
@@ -125,7 +124,7 @@
                 const data = await response.json();
 
                 if (!data.documents) {
-                    console.warn("🚨 No se encontraron documentos en Firestore.");
+                    
                     return;
                 }
 
@@ -140,7 +139,7 @@
                     startCountdown();
                 }
             } catch (error) {
-                console.error("🔥 Error al cargar imágenes:", error);
+                console.error(" Error al cargar imágenes:", error);
             }
         }
 
@@ -181,7 +180,7 @@
         let data = await response.json();
 
         if (!data.fields) {
-            console.error("⚠️ El anuncio no tiene datos. Asegúrate de que existe en Firestore.");
+            console.error(" El anuncio no tiene datos. Asegúrate de que existe en BD.");
             return;
         }
 
@@ -207,9 +206,9 @@
             body: JSON.stringify(requestBody)
         });
 
-        console.log(`📊 Vista registrada. Total: ${updatedViews}`);
+        //console.log(`📊 Vista registrada. Total: ${updatedViews}`);
     } catch (error) {
-        console.error("🔥 Error al registrar la vista:", error);
+        //console.error(" Error al registrar la vista:", error);
     }
 }
 
@@ -257,7 +256,7 @@
                 body: JSON.stringify(requestBody)
             });
 
-            console.log("📩 Datos guardados en Firestore:", requestBody);
+            //console.log("📩 Datos guardados en BD:", requestBody);
             closeForm();
         }
 
