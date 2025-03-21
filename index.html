@@ -43,26 +43,33 @@
     </div>
 
     <script>
-        console.log(" Cargando imágenes desde Firestore...");
+        console.log("🚀 Cargando imágenes desde Firestore...");
 
         let adsList = [];
         let currentIndex = 0;
         let imgElement = document.getElementById("adImage");
 
-        // 🔹 Clave API de Firebase (debes reemplazarla con la tuya)
+        // 🔹 Clave API de Firebase (reemplázala con la tuya)
         const FIREBASE_API_KEY = "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo";
 
         // 🔹 URL de Firestore REST API
         const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads?key=${FIREBASE_API_KEY}`;
 
-        async function loadAds() {
+        async function retryLoadAds(attempts = 3) {
+            if (attempts <= 0) {
+                console.error("❌ No se pudieron cargar imágenes después de varios intentos.");
+                reloadIfNeeded();
+                return;
+            }
+
             try {
                 const response = await fetch(FIRESTORE_URL);
                 const data = await response.json();
                 console.log("📜 Respuesta Firestore:", data); // Verifica la estructura de Firestore
 
                 if (!data.documents) {
-                    console.warn("🚨 No se encontraron documentos en Firestore.");
+                    console.warn(`🚨 No se encontraron documentos en Firestore. Intentos restantes: ${attempts - 1}`);
+                    setTimeout(() => retryLoadAds(attempts - 1), 2000);
                     return;
                 }
 
@@ -72,27 +79,37 @@
                     .filter(url => url);
 
                 if (adsList.length > 0) {
+                    console.log("✅ Imágenes cargadas:", adsList);
                     imgElement.style.display = "block"; // Muestra la imagen
                     changeImage();
                     setInterval(changeImage, 5000); // Cambia cada 5 segundos
                 } else {
-                    console.warn("🚨 No se encontraron imágenes válidas en Firestore.");
+                    console.warn(`⚠ No se encontraron imágenes. Intentos restantes: ${attempts - 1}`);
+                    setTimeout(() => retryLoadAds(attempts - 1), 2000); // Reintenta en 2 segundos
                 }
             } catch (error) {
                 console.error("🔥 Error al cargar imágenes:", error);
+                setTimeout(() => retryLoadAds(attempts - 1), 2000);
             }
         }
 
         function changeImage() {
             if (adsList.length > 0) {
                 imgElement.src = adsList[currentIndex];
-                console.log(" Mostrando imagen:", adsList[currentIndex]);
+                console.log("🔄 Mostrando imagen:", adsList[currentIndex]);
                 currentIndex = (currentIndex + 1) % adsList.length;
             }
         }
 
-        // 🔹 Cargar imágenes al abrir la página
-        loadAds();
+        function reloadIfNeeded() {
+            console.warn("⚠ Recargando página por fallo en carga de imágenes...");
+            setTimeout(() => {
+                location.reload();
+            }, 3000); // Recarga en 3 segundos si no hay imágenes
+        }
+
+        // 🔹 Cargar imágenes al abrir la página con reintentos
+        retryLoadAds();
     </script>
 
 </body>
