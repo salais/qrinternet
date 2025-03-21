@@ -86,22 +86,25 @@
                 });
                 if (images.length > 0) {
                     showSlides();
+                    updateCountdown();
                 }
             } catch (error) {
                 console.error("Error al obtener las imágenes:", error);
             }
-            setTimeout(updateCountdown, 3000);
         }
 
         function updateCountdown() {
             let countdownElement = document.getElementById('countdown');
-            if (countdown > 0) {
-                countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
-                countdown--;
-                setTimeout(updateCountdown, 1000);
-            } else {
-                window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
+            function countdownTick() {
+                if (countdown > 0) {
+                    countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
+                    countdown--;
+                    setTimeout(countdownTick, 5000);
+                } else {
+                    window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
+                }
             }
+            countdownTick();
         }
 
         function showSlides() {
@@ -116,7 +119,7 @@
             };
             recordView(currentImage.id);
             slideIndex = (slideIndex + 1) % images.length;
-            setTimeout(() => showSlides(), 5000);
+            setTimeout(showSlides, 5000);
         }
 
         async function recordClick(imageId) {
