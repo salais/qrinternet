@@ -46,6 +46,7 @@
         console.log("🚀 Cargando imágenes desde Firestore...");
 
         let adsList = [];
+        let adsIds = []; // Lista de IDs de los documentos para actualizar views
         let currentIndex = 0;
         let imgElement = document.getElementById("adImage");
 
@@ -73,10 +74,14 @@
                     return;
                 }
 
-                // Extrae solo las URLs de las imágenes y filtra valores nulos
+                // Extrae URLs e IDs de los anuncios
                 adsList = data.documents
                     .map(doc => doc.fields?.url?.stringValue)
                     .filter(url => url);
+                
+                adsIds = data.documents
+                    .map(doc => doc.name.split("/").pop()) // Extrae el ID del documento
+                    .filter(id => id);
 
                 if (adsList.length > 0) {
                     console.log("✅ Imágenes cargadas:", adsList);
@@ -97,7 +102,39 @@
             if (adsList.length > 0) {
                 imgElement.src = adsList[currentIndex];
                 console.log("🔄 Mostrando imagen:", adsList[currentIndex]);
+
+                // Incrementa el contador de views en Firestore
+                updateViews(adsIds[currentIndex]);
+
                 currentIndex = (currentIndex + 1) % adsList.length;
+            }
+        }
+
+        async function updateViews(docId) {
+            if (!docId) return;
+
+            const updateUrl = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${docId}?updateMask.fieldPaths=views&key=${FIREBASE_API_KEY}`;
+
+            const body = {
+                fields: {
+                    views: { integerValue: { increment: 1 } }
+                }
+            };
+
+            try {
+                const response = await fetch(updateUrl, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                console.log(`📊 Views incrementado para ${docId}`);
+            } catch (error) {
+                console.error(`❌ Error al actualizar views para ${docId}:`, error);
             }
         }
 
