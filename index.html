@@ -68,131 +68,148 @@
             transform: scale(1.1);
         }
     </style>
-    
-    <!-- Firebase en modo compatibilidad -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
     <script>
-        // Configuración de Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyD1UePxM4Mi33Z106b0NZSDsXTLlmxlkOo",
-            authDomain: "itos-f1e25.firebaseapp.com",
-            projectId: "itos-f1e25",
-            storageBucket: "itos-f1e25.appspot.com",
-            messagingSenderId: "910377107049",
-            appId: "1:910377107049:web:f6007fa49e5487da986cf8",
-            measurementId: "G-JCC8TR2VDT"
-        };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
         let countdown = 15;
         let slideIndex = 0;
         let images = [];
         let selectedPhone = "";
         let selectedMessage = "";
 
-        // Cargar imágenes desde Firebase Firestore
-        async function loadAds() {
-            try {
-                const adsRef = db.collection("ads");
-                const snapshot = await adsRef.get();
-                images = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Contador regresivo antes de liberar Internet
+        function updateCountdown() {
+            let countdownElement = document.getElementById('countdown');
 
-                console.log("Imágenes cargadas:", images);  // Depuración
+            if (countdown > 0) {
+                countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
+                countdown--;
+                setTimeout(updateCountdown, 1000);
+            } else {
+                console.log("Redirigiendo para liberar internet...");
+                window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
 
-                if (images.length > 0) {
-                    showSlides();
-                } else {
-                    console.error("No hay imágenes en la base de datos.");
-                }
-            } catch (error) {
-                console.error("Error al cargar las imágenes:", error);
+                // Esperar 3 segundos antes de intentar redirigir a WhatsApp
+                setTimeout(() => { 
+                    if (selectedPhone) {
+                        let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
+                        window.location.href = `https://wa.me/${selectedPhone}?text=${whatsappMessage}`;
+                    }
+                }, 3000);
             }
         }
 
-        // Contador regresivo antes de liberar Internet
-        function updateCountdown() {
-    let countdownElement = document.getElementById('countdown');
-    
-    if (countdown > 0) {
-        countdownElement.textContent = `ESPERA UN MOMENTO, LIBERANDO INTERNET EN ${countdown} SEGUNDOS...`;
-        countdown--;
-        setTimeout(updateCountdown, 1000);
-    } else {
-        console.log("Redirigiendo para liberar internet...");
+        // Cargar imágenes desde Firestore usando fetch()
+async function loadAds() {
+    try {
+        console.time("Carga de imágenes desde Firestore");
+        const response = await fetch("https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads");
+        console.timeEnd("Carga de imágenes desde Firestore");
 
-        // Redireccionar a la URL del portal cautivo
-        window.location.href = "http://192.168.2.254:3990/trial?userurl=http%3A%2F%2Fwww.msftconnecttest.com%2Fredirect";
+        const data = await response.json();
 
-        // Esperar 3 segundos antes de intentar redirigir a WhatsApp (por si hay un retraso en la carga)
-        setTimeout(() => { 
-            if (selectedPhone) {
-                let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
-                window.location.href = `https://wa.me/${selectedPhone}?text=${whatsappMessage}`;
-            }
-        }, 3000);
+        images = data.documents.map(doc => {
+            const fields = doc.fields || {}; // Asegurar que fields existe
+
+            return {
+                id: doc.name.split('/').pop(),  // Extraer el ID del documento
+                url: fields.url ? fields.url.stringValue : "",  // Verificar que el campo existe
+                phone: fields.phone ? fields.phone.stringValue : "", // Verificar que el campo existe
+                description: fields.description ? fields.description.stringValue : "" // Verificar que el campo existe
+            };
+        });
+
+        console.log("Imágenes cargadas desde Firestore:", images);
+
+        if (images.length > 0) {
+            showSlides();
+        } else {
+            console.error("No hay imágenes disponibles.");
+        }
+    } catch (error) {
+        console.error("Error al obtener las imágenes:", error);
     }
 }
 
+       // Función para obtener el valor actual de un campo en Firestore
+async function getCurrentFieldValue(imageId, fieldName) {
+    try {
+        const response = await fetch(`https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${imageId}`);
+        const data = await response.json();
 
-        // Registrar una vista en Firestore
-        function recordView(imageId) {
-            db.collection("ads").doc(imageId).update({
-                views: firebase.firestore.FieldValue.increment(1)
-            }).catch(error => console.error("Error al registrar la vista:", error));
-        }
+        return data.fields && data.fields[fieldName] ? parseInt(data.fields[fieldName].integerValue) : 0;
+    } catch (error) {
+        console.error(`Error al obtener el valor actual de ${fieldName}:`, error);
+        return 0;
+    }
+}
 
-        // Registrar un clic en Firestore
-        function recordClick(imageId) {
-            db.collection("ads").doc(imageId).update({
-                clicks: firebase.firestore.FieldValue.increment(1)
-            }).catch(error => console.error("Error al registrar el clic:", error));
-        }
+// Registrar una vista en Firestore sin borrar otros campos
+async function recordView(imageId) {
+    try {
+        const currentViews = await getCurrentFieldValue(imageId, "views");
+        await fetch(`https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${imageId}?updateMask.fieldPaths=views`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                fields: { views: { integerValue: currentViews + 1 } } // Incrementamos en 1
+            })
+        });
+    } catch (error) {
+        console.error("Error al registrar la vista:", error);
+    }
+}
+
+// Registrar un clic en Firestore sin borrar otros campos
+async function recordClick(imageId) {
+    try {
+        const currentClicks = await getCurrentFieldValue(imageId, "clicks");
+        await fetch(`https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${imageId}?updateMask.fieldPaths=clicks`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                fields: { clicks: { integerValue: currentClicks + 1 } } // Incrementamos en 1
+            })
+        });
+    } catch (error) {
+        console.error("Error al registrar el clic:", error);
+    }
+}
+
 
         // Mostrar imágenes en carrusel
         function showSlides() {
-    if (countdown <= 0) {
-        console.log("Publicidad detenida porque el contador llegó a 0.");
-        return; // Detiene la función y evita que siga mostrando imágenes
-    }
+            if (images.length === 0) {
+                console.error("No hay imágenes disponibles.");
+                return;
+            }
 
-    if (images.length === 0) {
-        console.error("No hay imágenes disponibles.");
-        return;
-    }
+            let slideshow = document.getElementById("slideshow");
+            let whatsappButton = document.getElementById("whatsapp-button");
 
-    let slideshow = document.getElementById("slideshow");
-    let whatsappButton = document.getElementById("whatsapp-button");
+            let currentImage = images[slideIndex];
+            console.log("Mostrando imagen:", currentImage);
 
-    let currentImage = images[slideIndex];
-    console.log("Mostrando imagen:", currentImage);
+            slideshow.src = currentImage.url + "?t=" + new Date().getTime(); // Evita problemas de caché
+            recordView(currentImage.id);
 
-    slideshow.src = currentImage.url;  // Establecer la imagen
-    recordView(currentImage.id);
+            // Configurar el botón de WhatsApp
+            if (currentImage.phone) {
+                whatsappButton.style.display = "block";
+                whatsappButton.onclick = function() {
+                    selectedPhone = currentImage.phone;
+                    selectedMessage = currentImage.description;
+                    recordClick(currentImage.id);
+                    let whatsappMessage = encodeURIComponent(`¡Hola! Estoy interesado en esta oferta: ${selectedMessage}. ¿Me puedes dar más detalles?`);
+                    window.location.href = `https://wa.me/${selectedPhone}?text=${whatsappMessage}`;
+                };
+            } else {
+                whatsappButton.style.display = "none";
+            }
 
-    // Configurar el botón de WhatsApp
-    whatsappButton.style.display = "block";
-    whatsappButton.onclick = function() {
-        selectedPhone = currentImage.phone;
-        selectedMessage = currentImage.description;
-        recordClick(currentImage.id);
-    };
-
-    // Cambiar de imagen cada 5 segundos si el contador no ha llegado a 0
-    setTimeout(() => {
-        if (countdown > 0) {  // Solo continúa si el contador es mayor a 0
             slideIndex = (slideIndex + 1) % images.length;
-            showSlides();
-        } else {
-            console.log("Rotación de publicidad detenida.");
-        }
-    }, 5000);
-}
 
+            setTimeout(showSlides, 5000);
+        }
 
         // Ejecutar funciones al cargar la página
         window.onload = function() {
