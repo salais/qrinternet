@@ -69,7 +69,7 @@
         }
     </style>
     <script>
-        let countdown = 18;
+        let countdown = 17;
         let slideIndex = 0;
         let images = [];
 
@@ -84,8 +84,10 @@
                         url: fields.url ? fields.url.stringValue : ""
                     };
                 });
+
                 if (images.length > 0) {
                     showSlides();
+                    setInterval(nextSlide, 5000); // Cambia la imagen cada 5 segundos
                 }
             } catch (error) {
                 console.error("Error al obtener las imágenes:", error);
@@ -108,11 +110,18 @@
             if (images.length === 0) return;
             let slideshow = document.getElementById("slideshow");
             let clickButton = document.getElementById("click-button");
+
             slideshow.src = images[slideIndex].url;
             clickButton.style.display = "block";
+
             clickButton.onclick = function() {
                 recordClick(images[slideIndex].id);
             };
+        }
+
+        function nextSlide() {
+            slideIndex = (slideIndex + 1) % images.length;
+            showSlides();
         }
 
         async function recordClick(imageId) {
