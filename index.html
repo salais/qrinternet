@@ -85,12 +85,27 @@
         <img id="adImage" alt="Publicidad">
     </div>
 
+    <!-- Formulario emergente -->
+    <div id="formOverlay">
+        <div id="formContainer">
+            <h3>Solicitar información</h3>
+            <p>Completa tus datos y nos pondremos en contacto.</p>
+            <input type="email" id="email" placeholder="Correo electrónico" required>
+            <input type="tel" id="phone" placeholder="Número de teléfono" required>
+            <button id="submitButton">Enviar</button>
+            <button id="cancelButton">Cancelar</button>
+        </div>
+    </div>
+
     <script>
         let adsList = [];
         let adsIds = [];
         let currentIndex = 0;
         let imgElement = document.getElementById("adImage");
         let countdownElement = document.getElementById("countdown");
+        let infoButton = document.getElementById("infoButton");
+        let submitButton = document.getElementById("submitButton");
+        let cancelButton = document.getElementById("cancelButton");
         let countdownValue = 15;
         let countdownInterval;
         let adsFinished = false;
@@ -130,72 +145,36 @@
             }
         }
 
-        function startCountdown() {
-            countdownElement.textContent = countdownValue;
-
-            countdownInterval = setInterval(() => {
-                if (adsFinished || countdownPaused) return;
-
-                countdownValue--;
-                countdownElement.textContent = countdownValue;
-
-                if (countdownValue % 5 === 0 && countdownValue !== 15 && countdownValue !== 0) {
-                    changeImage();
-                }
-
-                if (countdownValue <= 0) {
-                    clearInterval(countdownInterval);
-                    stopAdsAndRedirect();
-                }
-            }, 1000);
+        function openForm() {
+            countdownPaused = true;
+            document.getElementById("formOverlay").style.display = "flex";
         }
 
-        function changeImage() {
-            if (adsFinished || countdownPaused) return;
-            currentIndex = (currentIndex + 1) % adsList.length;
-            currentAdId = adsIds[currentIndex];
+        function closeForm() {
+            countdownPaused = false;
+            document.getElementById("formOverlay").style.display = "none";
+        }
 
-            let newImage = new Image();
-            newImage.src = adsList[currentIndex] + "?t=" + new Date().getTime(); // 🔹 Evitar caché
+        async function submitForm() {
+            const email = document.getElementById("email").value;
+            const phone = document.getElementById("phone").value;
 
-            newImage.onload = function () {
-                imgElement.src = adsList[currentIndex] + "?t=" + new Date().getTime(); // 🔹 Evitar caché
-                registerView(currentAdId);
+            const requestBody = {
+                fields: {
+                    email: { stringValue: email },
+                    phone: { stringValue: phone },
+                    adId: { stringValue: currentAdId },
+                    timestamp: { timestampValue: new Date().toISOString() }
+                }
             };
-        }
 
-        async function registerView(adId) {
-            const adDocURL = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${adId}?key=${FIREBASE_API_KEY}`;
+            await fetch(`https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/leads?key=${FIREBASE_API_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody)
+            });
 
-            try {
-                let response = await fetch(adDocURL);
-                let data = await response.json();
-
-                if (!data.fields) {
-                    console.error(" El anuncio no tiene datos.");
-                    return;
-                }
-
-                let existingFields = data.fields;
-                let currentViews = existingFields.views ? parseInt(existingFields.views.integerValue) : 0;
-                let updatedViews = currentViews + 1;
-
-                let requestBody = {
-                    fields: {
-                        ...existingFields,
-                        views: { integerValue: updatedViews }
-                    }
-                };
-
-                await fetch(adDocURL, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(requestBody)
-                });
-
-            } catch (error) {
-                console.error(" Error al registrar la vista:", error);
-            }
+            closeForm();
         }
 
         function stopAdsAndRedirect() {
@@ -207,6 +186,11 @@
                 window.location.href = REDIRECT_URL;
             }, 2000);
         }
+
+        // 🔹 Evento para abrir el formulario
+        infoButton.addEventListener("click", openForm);
+        submitButton.addEventListener("click", submitForm);
+        cancelButton.addEventListener("click", closeForm);
 
         retryLoadAds();
     </script>
