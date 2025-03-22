@@ -98,6 +98,8 @@
     </div>
 
     <script>
+       
+
         let adsList = [];
         let adsIds = [];
         let currentIndex = 0;
@@ -121,6 +123,7 @@
                 const data = await response.json();
 
                 if (!data.documents) {
+                    
                     return;
                 }
 
@@ -128,15 +131,9 @@
                 adsIds = data.documents.map(doc => doc.name.split("/").pop()).filter(id => id);
 
                 if (adsList.length > 0) {
-                    // 🔹 Precargar imágenes
-                    adsList.forEach(url => {
-                        const img = new Image();
-                        img.src = url;
-                    });
-
                     imgElement.style.display = "block";
                     currentAdId = adsIds[currentIndex];
-                    imgElement.src = adsList[currentIndex] + "?t=" + new Date().getTime(); // 🔹 Evitar caché
+                    imgElement.src = adsList[currentIndex];
                     registerView(currentAdId);
                     startCountdown();
                 }
@@ -144,6 +141,90 @@
                 console.error(" Error al cargar imágenes:", error);
             }
         }
+
+        function startCountdown() {
+            countdownElement.textContent = countdownValue;
+
+            countdownInterval = setInterval(() => {
+                if (adsFinished || countdownPaused) return;
+
+                countdownValue--;
+                countdownElement.textContent = countdownValue;
+
+                if (countdownValue % 5 === 0 && countdownValue !== 15 && countdownValue !== 0) {
+                    changeImage();
+                }
+
+                if (countdownValue <= 0) {
+                    clearInterval(countdownInterval);
+                    stopAdsAndRedirect();
+                }
+            }, 1000);
+        }
+
+        function changeImage() {
+            if (adsFinished || countdownPaused) return;
+            currentIndex = (currentIndex + 1) % adsList.length;
+            currentAdId = adsIds[currentIndex];
+            imgElement.src = adsList[currentIndex];
+            registerView(currentAdId);
+        }
+
+        async function registerView(adId) {
+    const adDocURL = `https://firestore.googleapis.com/v1/projects/itos-f1e25/databases/(default)/documents/ads/${adId}?key=${FIREBASE_API_KEY}`;
+
+    try {
+        // 🔹 Obtener el documento actual para leer todos sus campos
+        let response = await fetch(adDocURL);
+        let data = await response.json();
+
+        if (!data.fields) {
+            console.error(" El anuncio no tiene datos. Asegúrate de que existe en BD.");
+            return;
+        }
+
+        // 🔹 Mantener todos los campos actuales
+        let existingFields = data.fields;
+
+        // 🔹 Incrementar el campo 'views' sin borrar otros datos
+        let currentViews = existingFields.views ? parseInt(existingFields.views.integerValue) : 0;
+        let updatedViews = currentViews + 1;
+
+        // 🔹 Mantener todos los campos existentes y actualizar solo 'views'
+        let requestBody = {
+            fields: {
+                ...existingFields, // 🔹 Mantener todos los campos previos
+                views: { integerValue: updatedViews } // 🔹 Solo actualizar 'views'
+            }
+        };
+
+        // 🔹 Enviar actualización sin borrar otros campos
+        await fetch(adDocURL, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody)
+        });
+
+        //console.log(`📊 Vista registrada. Total: ${updatedViews}`);
+    } catch (error) {
+        //console.error(" Error al registrar la vista:", error);
+    }
+}
+
+
+        function stopAdsAndRedirect() {
+            adsFinished = true;
+            imgElement.style.display = "none";
+            countdownElement.textContent = "Conexión desbloqueada";
+
+            setTimeout(() => {
+                window.location.href = REDIRECT_URL;
+            }, 2000);
+        }
+
+        infoButton.addEventListener("click", openForm);
+        submitButton.addEventListener("click", submitForm);
+        cancelButton.addEventListener("click", closeForm);
 
         function openForm() {
             countdownPaused = true;
@@ -174,23 +255,9 @@
                 body: JSON.stringify(requestBody)
             });
 
+            //console.log("📩 Datos guardados en BD:", requestBody);
             closeForm();
         }
-
-        function stopAdsAndRedirect() {
-            adsFinished = true;
-            imgElement.style.display = "none";
-            countdownElement.textContent = "Conexión desbloqueada";
-
-            setTimeout(() => {
-                window.location.href = REDIRECT_URL;
-            }, 2000);
-        }
-
-        // 🔹 Evento para abrir el formulario
-        infoButton.addEventListener("click", openForm);
-        submitButton.addEventListener("click", submitForm);
-        cancelButton.addEventListener("click", closeForm);
 
         retryLoadAds();
     </script>
